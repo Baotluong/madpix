@@ -3,7 +3,7 @@
     "name": "MadPix",
     "slug": "madpix",
     "version": "0.1.0",
-    "orientation": "default",
+    "orientation": "landscape",
     "icon": "./assets/images/icon.png",
     "scheme": "madpix",
     "userInterfaceStyle": "light",

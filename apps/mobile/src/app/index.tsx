@@ -14,21 +14,21 @@ export default function Home() {
 
   return (
     <View style={styles.screen}>
-      <SafeAreaView style={styles.hero}>
+      <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.hero}>
         <Text style={styles.title}>MadPix</Text>
         <Image source={require('@/assets/images/elephant.png')} style={styles.elephant} contentFit="contain" />
-        <Text style={styles.tagline}>Fold the page. Draw your part.{'\n'}Unfold something mad.</Text>
+        <Text style={styles.tagline}>Fold the page. Draw your part. Unfold something mad.</Text>
       </SafeAreaView>
 
-      <SafeAreaView edges={['bottom']} style={styles.actions}>
+      <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.actions}>
         {ready && current && (
           <Button
-            label={`Continue game (${current.sections.length + 1} of ${current.artists.length})`}
+            label={`Continue drawing (${current.artists[current.sections.length]}'s turn)`}
             onPress={() => router.push('/play')}
           />
         )}
         <Button
-          label="New game"
+          label="New drawing"
           variant={current ? 'secondary' : 'primary'}
           onPress={() => router.push('/new')}
           disabled={!ready}
@@ -44,19 +44,19 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
+  screen: { flex: 1, flexDirection: 'row', backgroundColor: colors.bg },
   hero: {
-    flex: 1,
+    flex: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: 12,
     backgroundColor: colors.brand,
-    borderBottomLeftRadius: 32,
+    borderTopRightRadius: 32,
     borderBottomRightRadius: 32,
     paddingHorizontal: 24,
   },
-  title: { fontSize: 56, fontWeight: '900', color: colors.card, fontStyle: 'italic', letterSpacing: -1 },
-  elephant: { width: 280, height: 128 },
-  tagline: { fontSize: 18, color: colors.card, textAlign: 'center', lineHeight: 26 },
-  actions: { padding: 24, gap: 12, width: '100%', maxWidth: 480, alignSelf: 'center' },
+  title: { fontSize: 52, fontWeight: '900', color: colors.card, fontStyle: 'italic', letterSpacing: -1 },
+  elephant: { width: 260, height: 120 },
+  tagline: { fontSize: 17, color: colors.card, textAlign: 'center', lineHeight: 24 },
+  actions: { flex: 2, justifyContent: 'center', padding: 24, gap: 12, maxWidth: 420 },
 });

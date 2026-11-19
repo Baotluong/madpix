@@ -2,11 +2,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FlipInXDown } from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { sharePage } from '@/drawing/export-image';
 import { SectionCanvas } from '@/drawing/strokes';
-import { stripHeight } from '@/game/geometry';
+import { STRIP_W, stripHeight } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
 import { deleteFromGallery, startGame, useGameStore } from '@/game/store';
 import { confirm } from '@/lib/confirm';
@@ -18,7 +19,8 @@ const STEP_MS = 700;
 export default function RevealScreen() {
   const { id, fresh } = useLocalSearchParams<{ id: string; fresh?: string }>();
   const game = useGameStore((s) => s.gallery.find((g) => g.id === id));
-  const { width: W } = useWindowDimensions();
+  const { width: W, height: H } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [sharing, setSharing] = useState(false);
 
   if (!game) {
@@ -32,8 +34,13 @@ export default function RevealScreen() {
 
   // Unfold one strip at a time right after a game ends; show it all at once from the gallery.
   const animate = fresh === '1';
-  const width = Math.min(W - 32, 480);
   const n = game.sections.length;
+  const unitsH = stripHeight(game);
+  // Fit the whole page to the screen height so everyone sees it at once.
+  const pageAspect = (unitsH / STRIP_W) * n;
+  const width = Math.floor(
+    Math.min((H - insets.top - insets.bottom - 32) / pageAspect, (W - insets.left - insets.right) * 0.6),
+  );
 
   const share = async () => {
     setSharing(true);
@@ -54,49 +61,56 @@ export default function RevealScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      {game.prompt && (
-        <Animated.Text entering={animate ? FadeIn.duration(400) : undefined} style={styles.prompt}>
-          Everyone&apos;s inspo was <Text style={styles.promptWord}>{game.prompt}</Text>
-        </Animated.Text>
-      )}
-
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
       <View style={[styles.page, { width }]}>
         {game.sections.map((section, i) => (
           <Animated.View
             key={i}
-            entering={animate ? FlipInXDown.delay(400 + i * STEP_MS).duration(STEP_MS) : undefined}>
-            <SectionCanvas strokes={section.strokes} width={width} unitsH={stripHeight(game)} />
+            entering={animate ? FlipInXDown.delay(300 + i * STEP_MS).duration(STEP_MS) : undefined}>
+            <SectionCanvas strokes={section.strokes} width={width} unitsH={unitsH} />
           </Animated.View>
         ))}
       </View>
 
-      <Animated.View
-        entering={animate ? FadeIn.delay(400 + n * STEP_MS) : undefined}
-        style={styles.after}>
-        <Text style={styles.meta}>By {game.artists.join(', ')}</Text>
-        <Text style={styles.metaSmall}>{new Date(game.finishedAt ?? game.createdAt).toLocaleString()}</Text>
-        <Button label={sharing ? 'Preparing image...' : 'Save / share image'} onPress={share} disabled={sharing} />
-        <Button
-          label="Play again with the same artists"
-          variant="secondary"
-          onPress={() => {
-            // Same artists; a fresh inspo word if this game used one.
-            startGame(game.artists, game.prompt ? randomPrompt(game.prompt) : null);
-            router.replace('/play');
-          }}
-        />
-        <Button label="Home" variant="ghost" onPress={() => goHome()} />
-        {!animate && <Button label="Delete" variant="ghost" onPress={remove} />}
+      <Animated.View entering={animate ? FadeIn.delay(300 + n * STEP_MS) : undefined} style={styles.side}>
+        <ScrollView contentContainerStyle={styles.sideContent}>
+          {game.prompt && (
+            <Text style={styles.prompt}>
+              Everyone&apos;s inspo was <Text style={styles.promptWord}>{game.prompt}</Text>
+            </Text>
+          )}
+          <Text style={styles.meta}>By {game.artists.join(', ')}</Text>
+          <Text style={styles.metaSmall}>{new Date(game.finishedAt ?? game.createdAt).toLocaleString()}</Text>
+          <Button label={sharing ? 'Preparing image...' : 'Save / share image'} onPress={share} disabled={sharing} />
+          <Button
+            label="New drawing, same artists"
+            variant="secondary"
+            onPress={() => {
+              // Same artists; a fresh inspo word if this drawing used one.
+              startGame(game.artists, game.prompt ? randomPrompt(game.prompt) : null);
+              router.replace('/play');
+            }}
+          />
+          <View style={styles.row}>
+            {!animate && router.canGoBack() && (
+              <Button label="Back" variant="ghost" onPress={() => router.back()} style={{ flex: 1 }} />
+            )}
+            <Button label="Home" variant="ghost" onPress={() => goHome()} style={{ flex: 1 }} />
+            {!animate && <Button label="Delete" variant="ghost" onPress={remove} style={{ flex: 1 }} />}
+          </View>
+        </ScrollView>
       </Animated.View>
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { alignItems: 'center', padding: 16, gap: 16 },
+  screen: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24, padding: 16 },
+  side: { flex: 1, maxWidth: 380, alignSelf: 'stretch' },
+  sideContent: { flexGrow: 1, justifyContent: 'center', gap: 10 },
+  row: { flexDirection: 'row', gap: 4 },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
-  prompt: { fontSize: 17, color: colors.muted },
+  prompt: { fontSize: 17, color: colors.muted, textAlign: 'center' },
   promptWord: { fontWeight: '800', color: colors.ink },
   page: {
     backgroundColor: colors.paper,
@@ -108,7 +122,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  after: { width: '100%', maxWidth: 480, gap: 10, alignItems: 'stretch' },
   meta: { fontSize: 16, fontWeight: '700', color: colors.ink, textAlign: 'center' },
   metaSmall: { fontSize: 13, color: colors.muted, textAlign: 'center', marginBottom: 6 },
 });

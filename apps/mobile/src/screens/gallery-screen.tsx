@@ -16,7 +16,7 @@ export default function GalleryScreen() {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>No finished drawings yet.</Text>
-        <Button label="Start a game" onPress={() => router.replace('/new')} />
+        <Button label="Start a drawing" onPress={() => router.replace('/new')} />
       </View>
     );
   }

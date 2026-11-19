@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Redirect, router } from 'expo-router';
-import * as ScreenOrientation from 'expo-screen-orientation';
+import { NavigationBar } from 'expo-navigation-bar';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -9,7 +10,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button } from '@/components/button';
 import { canvasHeight, DrawingCanvas } from '@/drawing/drawing-canvas';
 import { PageOverview } from '@/drawing/page-overview';
-import { Toolbar, type Tool } from '@/drawing/toolbar';
+import { IconButton, PANEL_CONTENT_W, Toolbar, type Tool } from '@/drawing/toolbar';
 import { STRIP_W, stripHeight } from '@/game/geometry';
 import { finishTurn, quitGame, saveDraft, useGameStore } from '@/game/store';
 import type { Game, Stroke } from '@/game/types';
@@ -17,29 +18,25 @@ import { confirm } from '@/lib/confirm';
 import { goHome } from '@/lib/go-home';
 import { colors, PALETTE, SIZES } from '@/theme';
 
-const HEADER_H = 44;
-const PANEL_W = 196;
+const PANEL_PAD = 8;
+const PANEL_W = PANEL_CONTENT_W + PANEL_PAD * 2;
+const MARGIN = 8;
 const INSPO_MS = 2500;
 
-/** Strips are wide, so drawing happens with the phone turned sideways. */
-function useLandscapeWhileMounted() {
-  useEffect(() => {
-    // Not supported on web; the layout adapts to the window instead.
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
-    return () => {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
-    };
-  }, []);
-}
-
 export default function PlayScreen() {
-  useLandscapeWhileMounted();
   const ready = useGameStore((s) => s.ready);
   const game = useGameStore((s) => s.current);
   if (!ready) return null;
   if (!game) return <Redirect href="/" />;
-  // A new key per turn resets all drawing state for the next artist.
-  return <Turn key={`${game.id}-${game.sections.length}`} game={game} />;
+  return (
+    <>
+      {/* Full screen while playing: every pixel goes to the paper. Swipe from an edge to bring the bars back. */}
+      <StatusBar hidden />
+      <NavigationBar hidden />
+      {/* A new key per turn resets all drawing state for the next artist. */}
+      <Turn key={`${game.id}-${game.sections.length}`} game={game} />
+    </>
+  );
 }
 
 function Turn({ game }: { game: Game }) {
@@ -58,7 +55,7 @@ function Handoff({ game, onReady }: { game: Game; onReady: () => void }) {
     <SafeAreaView style={styles.handoff}>
       <ScrollView contentContainerStyle={styles.handoffContent}>
         <Text style={styles.handoffStep}>
-          Strip {turn + 1} of {game.artists.length}
+          Artist {turn + 1} of {game.artists.length}
         </Text>
         <Text style={styles.handoffTitle}>
           {turn === 0 ? `${artist}, you start!` : `Pass the phone to ${artist}`}
@@ -104,12 +101,14 @@ function Drawing({ game }: { game: Game }) {
     return () => clearTimeout(t);
   }, [showInspo]);
 
-  // Fit the strip (plus the sliver) into the space left by the header and tools.
+  // Make the strip (plus the sliver) as big as the screen allows next to the tools.
   const hasSliver = turn > 0;
-  const availW = landscape ? W - insets.left - insets.right - PANEL_W - 16 : Math.min(W - 24, 900);
+  const availW = landscape
+    ? W - insets.left - insets.right - PANEL_W - MARGIN * 2
+    : W - insets.left - insets.right - MARGIN * 2;
   const availH = landscape
-    ? H - insets.top - insets.bottom - HEADER_H - 12
-    : H - insets.top - insets.bottom - HEADER_H - 120 - 72;
+    ? H - insets.top - insets.bottom - MARGIN * 2
+    : H - insets.top - insets.bottom - 260;
   const stripWidth = Math.floor(Math.min(availW, availH / canvasHeight(1, unitsH, hasSliver)));
 
   const commit = (next: Stroke[]) => {
@@ -135,7 +134,7 @@ function Drawing({ game }: { game: Game }) {
     saveDraft(next);
   };
 
-  const fold = async () => {
+  const done = async () => {
     const ok = await confirm(
       isLast ? 'Unfold the page?' : 'Fold the paper?',
       isLast
@@ -144,100 +143,84 @@ function Drawing({ game }: { game: Game }) {
       isLast ? 'Unfold!' : 'Fold it',
     );
     if (!ok) return;
-    const done = finishTurn(strokes);
-    if (done) router.replace({ pathname: '/reveal/[id]', params: { id: done.id, fresh: '1' } });
+    const finished = finishTurn(strokes);
+    if (finished) router.replace({ pathname: '/reveal/[id]', params: { id: finished.id, fresh: '1' } });
   };
 
   const quit = async () => {
-    if (await confirm('Quit this game?', 'The drawing will be thrown away.', 'Quit')) {
+    if (await confirm('Quit this drawing?', 'It will be thrown away.', 'Quit')) {
       quitGame();
       goHome();
     }
   };
 
   const pageAspect = (unitsH / STRIP_W) * game.artists.length;
-  const overviewWidth = Math.min(W - 48, 420, (H - 120) / pageAspect);
-  const doneLabel = isLast ? 'Unfold the page' : 'Fold the paper';
-
-  const toolbar = (
-    <Toolbar
-      vertical={landscape}
-      tool={tool}
-      color={color}
-      sizeIndex={sizeIndex}
-      canUndo={past.length > 0}
-      canRedo={future.length > 0}
-      onTool={setTool}
-      onColor={setColor}
-      onSize={setSizeIndex}
-      onUndo={undo}
-      onRedo={redo}
-      onClear={() => commit([])}
-    />
-  );
+  const overviewWidth = Math.min(W - 48, 420, (H - 100) / pageAspect);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
-      <View style={styles.header}>
-        <View style={styles.headerSide}>
-          <Pressable onPress={quit} hitSlop={10}>
-            <Text style={styles.headerLink}>Quit</Text>
-          </Pressable>
-        </View>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {artist}
-          <Text style={styles.headerStep}>
-            {'  ·  '}strip {turn + 1} of {game.artists.length}
-          </Text>
-        </Text>
-        <View style={[styles.headerSide, styles.headerRight]}>
-          {game.prompt && (
-            <Pressable onPress={() => setShowInspo(true)} hitSlop={10} accessibilityLabel="Show inspo word">
-              <Ionicons name="bulb-outline" size={22} color={colors.brandDark} />
-            </Pressable>
-          )}
-          <Pressable onPress={() => setOverview(true)} hitSlop={10}>
-            <Text style={styles.headerLink}>Whole page</Text>
-          </Pressable>
-        </View>
-      </View>
-
       <View style={[styles.body, landscape && styles.bodyLandscape]}>
         <View style={styles.paperArea}>
-          <DrawingCanvas
-            width={stripWidth}
-            unitsH={unitsH}
-            strokes={strokes}
-            prevStrokes={hasSliver ? game.sections[turn - 1].strokes : undefined}
-            showNextHint={!isLast}
-            color={tool === 'eraser' ? colors.paper : color}
-            penWidth={tool === 'eraser' ? SIZES[sizeIndex] * 2 : SIZES[sizeIndex]}
-            onStroke={(s) => commit([...strokes, s])}
-          />
-          {showInspo && game.prompt && (
-            <Animated.View
-              entering={FadeIn.duration(200)}
-              exiting={FadeOut.duration(400)}
-              pointerEvents="none"
-              style={styles.inspoBubble}>
-              <Text style={styles.inspoBubbleText}>
-                Inspo: <Text style={{ fontWeight: '800' }}>{game.prompt}</Text>
-              </Text>
-            </Animated.View>
-          )}
+          <View>
+            <DrawingCanvas
+              width={stripWidth}
+              unitsH={unitsH}
+              strokes={strokes}
+              prevStrokes={hasSliver ? game.sections[turn - 1].strokes : undefined}
+              showNextHint={!isLast}
+              color={tool === 'eraser' ? colors.paper : color}
+              penWidth={tool === 'eraser' ? SIZES[sizeIndex] * 2 : SIZES[sizeIndex]}
+              onStroke={(s) => commit([...strokes, s])}
+            />
+            {showInspo && game.prompt && (
+              <Animated.View
+                entering={FadeIn.duration(200)}
+                exiting={FadeOut.duration(400)}
+                pointerEvents="none"
+                style={styles.inspoBubble}>
+                <Text style={styles.inspoBubbleText}>
+                  Inspo: <Text style={{ fontWeight: '800' }}>{game.prompt}</Text>
+                </Text>
+              </Animated.View>
+            )}
+          </View>
         </View>
 
-        {landscape ? (
-          <View style={styles.panel}>
-            {toolbar}
-            <Button label={doneLabel} onPress={fold} style={styles.panelDone} />
+        <View style={[styles.panel, !landscape && styles.panelPortrait]}>
+          <View style={styles.panelTop}>
+            <Text style={styles.artist} numberOfLines={1}>
+              {artist}
+            </Text>
+            <View style={styles.controls}>
+              <IconButton plain label="Quit" onPress={quit}>
+                <Ionicons name="close" size={24} color={colors.muted} />
+              </IconButton>
+              {game.prompt && (
+                <IconButton plain label="Show inspo word" onPress={() => setShowInspo(true)}>
+                  <Ionicons name="bulb-outline" size={22} color={colors.brandDark} />
+                </IconButton>
+              )}
+              <IconButton plain label="See the whole page" onPress={() => setOverview(true)}>
+                <Ionicons name="eye-outline" size={23} color={colors.brandDark} />
+              </IconButton>
+            </View>
           </View>
-        ) : (
-          <View style={styles.portraitTools}>
-            {toolbar}
-            <Button label={doneLabel} onPress={fold} />
-          </View>
-        )}
+          <Toolbar
+            vertical={landscape}
+            tool={tool}
+            color={color}
+            sizeIndex={sizeIndex}
+            canUndo={past.length > 0}
+            canRedo={future.length > 0}
+            onTool={setTool}
+            onColor={setColor}
+            onSize={setSizeIndex}
+            onUndo={undo}
+            onRedo={redo}
+            onClear={() => commit([])}
+          />
+          <Button label="Done" onPress={done} style={styles.done} />
+        </View>
       </View>
 
       <Modal
@@ -248,7 +231,6 @@ function Drawing({ game }: { game: Game }) {
         onRequestClose={() => setOverview(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOverview(false)}>
           <ScrollView contentContainerStyle={styles.overviewContent}>
-            <Text style={styles.overviewTitle}>The whole page</Text>
             <PageOverview game={game} strokes={strokes} width={overviewWidth} />
             <Text style={styles.overviewHint}>Tap anywhere to keep drawing</Text>
           </ScrollView>
@@ -274,16 +256,9 @@ const styles = StyleSheet.create({
   },
   inspoLabel: { fontSize: 13, color: colors.muted },
   inspoWord: { fontSize: 24, fontWeight: '800', color: colors.ink },
-  header: { height: HEADER_H, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' },
-  // Equal-width sides keep the title truly centered.
-  headerSide: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  headerRight: { justifyContent: 'flex-end', gap: 18 },
-  headerLink: { fontSize: 16, fontWeight: '600', color: colors.brandDark },
-  headerTitle: { flexShrink: 1, fontSize: 17, fontWeight: '800', color: colors.ink, textAlign: 'center' },
-  headerStep: { fontSize: 14, fontWeight: '400', color: colors.muted },
-  body: { flex: 1, alignItems: 'center' },
-  bodyLandscape: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', gap: 16 },
-  paperArea: { alignItems: 'center' },
+  body: { flex: 1, padding: MARGIN, gap: MARGIN },
+  bodyLandscape: { flexDirection: 'row', paddingRight: 0 },
+  paperArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   inspoBubble: {
     position: 'absolute',
     // At the bottom so it never hides the sliver at the top.
@@ -296,16 +271,17 @@ const styles = StyleSheet.create({
   },
   inspoBubbleText: { color: colors.card, fontSize: 15 },
   panel: {
-    width: PANEL_W - 16,
+    width: PANEL_W,
+    paddingHorizontal: PANEL_PAD,
     alignItems: 'center',
     justifyContent: 'space-between',
-    alignSelf: 'stretch',
-    paddingBottom: 8,
   },
-  panelDone: { alignSelf: 'stretch', paddingHorizontal: 8 },
-  portraitTools: { width: '100%', maxWidth: 560, paddingHorizontal: 16, gap: 4 },
+  panelPortrait: { width: '100%', maxWidth: 560, alignSelf: 'center', gap: 6 },
+  panelTop: { alignSelf: 'stretch', gap: 2 },
+  artist: { fontSize: 16, fontWeight: '800', color: colors.ink, textAlign: 'center' },
+  controls: { flexDirection: 'row', justifyContent: 'space-between' },
+  done: { alignSelf: 'stretch', minHeight: 44 },
   backdrop: { flex: 1, backgroundColor: 'rgba(31,36,48,0.75)' },
-  overviewContent: { alignItems: 'center', padding: 24, gap: 12 },
-  overviewTitle: { color: colors.card, fontSize: 20, fontWeight: '800' },
+  overviewContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 16, gap: 10 },
   overviewHint: { color: colors.card, opacity: 0.8 },
 });

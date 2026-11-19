@@ -7,9 +7,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colors } from '@/theme';
 
 export default function RootLayout() {
-  // Portrait everywhere except the drawing screen, which turns sideways.
+  // The whole app is landscape: strips are wide, so the phone stays sideways
+  // from setup to reveal. (app.json sets this too; the lock makes Expo Go follow it.)
   useEffect(() => {
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
   }, []);
 
   return (
@@ -22,9 +23,9 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.bg },
         }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="new" options={{ title: 'New game' }} />
+        <Stack.Screen name="new" options={{ title: 'New drawing' }} />
         <Stack.Screen name="play" options={{ headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="reveal/[id]" options={{ title: 'The reveal' }} />
+        <Stack.Screen name="reveal/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="gallery" options={{ title: 'Gallery' }} />
       </Stack>
     </GestureHandlerRootView>
