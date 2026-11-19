@@ -37,6 +37,7 @@ export default function Home() {
           onPress={() => router.push('/new')}
           disabled={!ready}
         />
+        <Button label="Draw with friends" variant="secondary" onPress={() => router.push('/friends')} />
         <Button
           label={galleryCount ? `Gallery (${galleryCount})` : 'Gallery'}
           variant="ghost"

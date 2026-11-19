@@ -27,6 +27,8 @@ type Props = {
 /** Skip points closer than this (units) to the last one, to keep strokes small. */
 const MIN_STEP = 2;
 const FOLD_DASH = [8, 6];
+/** How far past the paper's edges a point may go, in units. */
+const EDGE = 40;
 
 /** Screen height of the drawing area for a given width, including the sliver if there is one. */
 export function canvasHeight(width: number, unitsH: number, hasSliver: boolean) {
@@ -55,7 +57,13 @@ export function DrawingCanvas(p: Props) {
     liveRef.current = s;
     setLive(s);
   };
-  const toUnits = (x: number, y: number) => [x / scale, (y - sliverPx) / scale];
+  // Dragging off the paper keeps the stroke going, but points stay just past the
+  // edges: that ink is clipped anyway, and the server rejects far-off points.
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  const toUnits = (x: number, y: number) => [
+    clamp(x / scale, -EDGE, STRIP_W + EDGE),
+    clamp((y - sliverPx) / scale, -unitsH * SLIVER - EDGE, unitsH + EDGE),
+  ];
 
   const pan = usePanGesture({
     runOnJS: true,

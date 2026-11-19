@@ -27,6 +27,9 @@ export default function RootLayout() {
         <Stack.Screen name="play" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="reveal/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="gallery" options={{ title: 'Gallery' }} />
+        <Stack.Screen name="friends" options={{ title: 'Draw with friends' }} />
+        <Stack.Screen name="join/[code]" options={{ title: 'Join a drawing' }} />
+        <Stack.Screen name="remote/[id]" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack>
     </GestureHandlerRootView>
   );

@@ -11,7 +11,7 @@ data class Stroke(
 
 private val COLOR = Regex("^#[0-9a-fA-F]{6}$")
 private const val MAX_STROKES = 3_000
-private const val MAX_NUMBERS_PER_STROKE = 10_000
+private const val MAX_NUMBERS_PER_STROKE = 40_000
 private const val MAX_NUMBERS = 400_000
 
 /** Strokes may start a little outside the strip (on the sliver above it), so allow some slack. */

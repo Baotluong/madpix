@@ -12,3 +12,9 @@ export function confirm(title: string, message: string, okLabel = 'OK'): Promise
     ]),
   );
 }
+
+/** A plain message with an OK button, on every platform. */
+export function notify(title: string, message: string) {
+  if (Platform.OS === 'web') window.alert(`${title}\n\n${message}`);
+  else Alert.alert(title, message);
+}
