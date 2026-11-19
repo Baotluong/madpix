@@ -1,11 +1,13 @@
 import Constants from 'expo-constants';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { useGameStore } from '@/game/store';
+import { api, usePlayer } from '@/remote/session';
 import { colors } from '@/theme';
 
 /** e.g. "0.1.0 · 095eb16", so you can tell which code is running. "+" means uncommitted changes. */
@@ -15,6 +17,26 @@ export default function Home() {
   const ready = useGameStore((s) => s.ready);
   const current = useGameStore((s) => s.current);
   const galleryCount = useGameStore((s) => s.gallery.length);
+  const seen = useGameStore((s) => s.seenRemote);
+  const { session } = usePlayer();
+  // Friend drawings waiting on me: my turn, or finished and not unfolded yet.
+  const [needsMe, setNeedsMe] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      if (!session) return;
+      let live = true;
+      api
+        .myDrawings()
+        .then((ds) => {
+          const n = ds.filter((d) => d.myTurn || (d.status === 'FINISHED' && !seen.includes(d.id))).length;
+          if (live) setNeedsMe(n);
+        })
+        .catch(() => {});
+      return () => {
+        live = false;
+      };
+    }, [session, seen]),
+  );
 
   return (
     <View style={styles.screen}>
@@ -37,7 +59,11 @@ export default function Home() {
           onPress={() => router.push('/new')}
           disabled={!ready}
         />
-        <Button label="Draw with friends" variant="secondary" onPress={() => router.push('/friends')} />
+        <Button
+          label={needsMe ? `Draw with friends (${needsMe} waiting on you)` : 'Draw with friends'}
+          variant="secondary"
+          onPress={() => router.push('/friends')}
+        />
         <Button
           label={galleryCount ? `Gallery (${galleryCount})` : 'Gallery'}
           variant="ghost"

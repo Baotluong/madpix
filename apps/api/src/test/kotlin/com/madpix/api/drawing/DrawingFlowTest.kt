@@ -70,6 +70,7 @@ class DrawingFlowTest(
             .andExpect { status { isCreated() } }.json()
         val id = created["id"].asString()
         val code = created["inviteCode"].asString()
+        assertTrue(Regex("^[a-z]+[0-9]{1,2}$").matches(code), "easy to type: $code")
         assertTrue(created["myTurn"].asBoolean())
         assertEquals("elephant", created["prompt"].asString())
 
@@ -81,11 +82,12 @@ class DrawingFlowTest(
         assertFalse(afterBao["myTurn"].asBoolean())
         assertTrue(afterBao["waitingForArtist"].asBoolean(), "nobody has spot 2 yet")
 
-        // Sam previews the invite (codes aren't case sensitive), then joins: it's their turn.
-        call(null, GET, "/invites/${code.lowercase()}")
+        // Sam previews the invite (codes ignore case and spaces), then joins: it's their turn.
+        val typed = code.uppercase().replace(Regex("([0-9]+)"), " $1")
+        call(null, GET, "/invites/$typed")
             .andExpect { status { isOk() } }
             .andExpect { jsonPath("$.spotsLeft") { value(1) } }
-        val joined = call(sam, POST, "/drawings/join", mapOf("code" to code))
+        val joined = call(sam, POST, "/drawings/join", mapOf("code" to typed))
             .andExpect { status { isOk() } }.json()
         assertTrue(joined["myTurn"].asBoolean())
         assertEquals(1, joined["myPosition"].asInt())
@@ -135,15 +137,19 @@ class DrawingFlowTest(
     fun `full drawings, strangers and bad strokes are turned away`() {
         val a = newPlayer("A")
         val b = newPlayer("B")
+        val c = newPlayer("C")
         val stranger = newPlayer("Stranger")
-        val d = call(a, POST, "/drawings", mapOf("artistCount" to 2)).json()
+        val d = call(a, POST, "/drawings", mapOf("artistCount" to 3)).json()
         val id = d["id"].asString()
         val code = d["inviteCode"].asString()
 
         call(b, POST, "/drawings/join", mapOf("code" to code)).andExpect { status { isOk() } }
         // Joining twice is harmless.
         call(b, POST, "/drawings/join", mapOf("code" to code)).andExpect { status { isOk() } }
-        call(stranger, POST, "/drawings/join", mapOf("code" to code)).andExpect { status { isConflict() } }
+        // The last spot is taken, so the code is freed for another drawing.
+        val full = call(c, POST, "/drawings/join", mapOf("code" to code)).andExpect { status { isOk() } }.json()
+        assertTrue(full["inviteCode"].isNull)
+        call(stranger, POST, "/drawings/join", mapOf("code" to code)).andExpect { status { isNotFound() } }
         call(stranger, GET, "/drawings/$id").andExpect { status { isNotFound() } }
         call(null, GET, "/drawings/$id").andExpect { status { isUnauthorized() } }
 

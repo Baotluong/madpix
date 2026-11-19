@@ -1,14 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useSyncExternalStore } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSyncExternalStore } from 'react';
 
-import {
-  ApiError,
-  request,
-  type DrawingView,
-  type InviteView,
-  type PlayerView,
-} from "./api";
-import type { Stroke } from "@/game/types";
+import { ApiError, request, type DrawingView, type InviteView, type PlayerView } from './api';
+import type { Stroke } from '@/game/types';
 
 /**
  * Who this device plays as. No accounts: the API hands out a token once and the
@@ -18,7 +12,7 @@ import type { Stroke } from "@/game/types";
 type Session = { player: PlayerView; token: string };
 type State = { ready: boolean; session: Session | null };
 
-const KEY = "madpix:player";
+const KEY = 'madpix:player';
 let state: State = { ready: false, session: null };
 const listeners = new Set<() => void>();
 
@@ -58,31 +52,23 @@ export function usePlayer() {
 export async function setPlayerName(name: string): Promise<PlayerView> {
   const trimmed = name.trim();
   if (state.session) {
-    const player = await authed<PlayerView>("PATCH", "/players/me", {
+    const player = await authed<PlayerView>('PATCH', '/players/me', {
       name: trimmed,
     });
     await save({ ...state.session, player });
     return player;
   }
-  const created = await request<{ player: PlayerView; token: string }>(
-    "POST",
-    "/players",
-    {
-      body: { name: trimmed },
-    },
-  );
+  const created = await request<{ player: PlayerView; token: string }>('POST', '/players', {
+    body: { name: trimmed },
+  });
   await save(created);
   return created.player;
 }
 
 /** A request as this device's player. A rejected token means the API forgot us: start fresh. */
-async function authed<T>(
-  method: "GET" | "POST" | "PATCH",
-  path: string,
-  body?: unknown,
-): Promise<T> {
+async function authed<T>(method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<T> {
   const token = state.session?.token;
-  if (!token) throw new ApiError(401, "Pick a name first");
+  if (!token) throw new ApiError(401, 'Pick a name first');
   try {
     return await request<T>(method, path, { token, body });
   } catch (e) {
@@ -92,14 +78,12 @@ async function authed<T>(
 }
 
 export const api = {
-  myDrawings: () => authed<DrawingView[]>("GET", "/drawings"),
-  drawing: (id: string) => authed<DrawingView>("GET", `/drawings/${id}`),
+  myDrawings: () => authed<DrawingView[]>('GET', '/drawings'),
+  drawing: (id: string) => authed<DrawingView>('GET', `/drawings/${id}`),
   create: (artistCount: number, prompt: string | null) =>
-    authed<DrawingView>("POST", "/drawings", { artistCount, prompt }),
-  join: (code: string) =>
-    authed<DrawingView>("POST", "/drawings/join", { code }),
+    authed<DrawingView>('POST', '/drawings', { artistCount, prompt }),
+  join: (code: string) => authed<DrawingView>('POST', '/drawings/join', { code }),
   submitStrip: (id: string, strokes: Stroke[]) =>
-    authed<DrawingView>("POST", `/drawings/${id}/strip`, { strokes }),
-  invite: (code: string) =>
-    request<InviteView>("GET", `/invites/${encodeURIComponent(code.trim())}`),
+    authed<DrawingView>('POST', `/drawings/${id}/strip`, { strokes }),
+  invite: (code: string) => request<InviteView>('GET', `/invites/${encodeURIComponent(code.trim())}`),
 };

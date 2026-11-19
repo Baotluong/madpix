@@ -15,7 +15,8 @@ data class ArtistView(
 /** A drawing as one player sees it. Only ever holds what that player is allowed to see. */
 data class DrawingView(
     val id: String,
-    val inviteCode: String,
+    /** Null once every spot is taken. */
+    val inviteCode: String?,
     val artistCount: Int,
     val stripH: Int,
     val prompt: String?,

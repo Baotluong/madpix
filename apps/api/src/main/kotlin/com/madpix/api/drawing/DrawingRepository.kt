@@ -7,7 +7,8 @@ import java.time.Instant
 
 data class DrawingRow(
     val id: String,
-    val inviteCode: String,
+    /** Null once every spot is taken. */
+    val inviteCode: String?,
     val artistCount: Int,
     val stripH: Int,
     val prompt: String?,
@@ -58,14 +59,14 @@ class DrawingRepository(private val jdbc: JdbcClient) {
         jdbc.sql("SELECT * FROM drawings WHERE invite_code = ?").param(code)
             .query { rs, _ -> rs.toDrawing() }.optional().orElse(null)
 
-    /** The player's drawings, most recently active first. */
+    /** The player's drawings: unfinished ones first (newest first), then finished (most recent first). */
     fun findForPlayer(playerId: String, limit: Int): List<DrawingRow> =
         jdbc.sql(
             """
             SELECT d.* FROM drawings d
             JOIN seats s ON s.drawing_id = d.id
             WHERE s.player_id = ?
-            ORDER BY COALESCE(d.finished_at, d.created_at) DESC
+            ORDER BY d.finished_at IS NOT NULL, COALESCE(d.finished_at, d.created_at) DESC
             LIMIT ?
             """,
         )
@@ -105,6 +106,10 @@ class DrawingRepository(private val jdbc: JdbcClient) {
         )
             .params(strokesJson, now.toString(), drawingId, position)
             .update()
+    }
+
+    fun clearInviteCode(drawingId: String) {
+        jdbc.sql("UPDATE drawings SET invite_code = NULL WHERE id = ?").param(drawingId).update()
     }
 
     fun finish(drawingId: String, now: Instant) {

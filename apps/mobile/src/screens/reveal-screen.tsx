@@ -37,15 +37,17 @@ export default function RevealScreen() {
   return (
     <RevealView game={game} animate={animate}>
       <ShareImageButton game={game} />
-      <Button
-        label="New drawing, same artists"
-        variant="secondary"
-        onPress={() => {
-          // Same artists; a fresh inspo word if this drawing used one.
-          startGame(game.artists, game.prompt ? randomPrompt(game.prompt) : null);
-          router.replace('/play');
-        }}
-      />
+      {!game.remote && (
+        <Button
+          label="New drawing, same artists"
+          variant="secondary"
+          onPress={() => {
+            // Same artists; a fresh inspo word if this drawing used one.
+            startGame(game.artists, game.prompt ? randomPrompt(game.prompt) : null);
+            router.replace('/play');
+          }}
+        />
+      )}
       <View style={styles.row}>
         {!animate && router.canGoBack() && (
           <Button label="Back" variant="ghost" onPress={() => router.back()} style={{ flex: 1 }} />

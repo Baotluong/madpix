@@ -1,6 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { Stroke } from "@/game/types";
+import type { Stroke } from '@/game/types';
 
 /** A remote strip in progress stays on this device until it's folded. */
 const key = (drawingId: string) => `madpix:draft:${drawingId}`;

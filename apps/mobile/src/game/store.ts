@@ -15,18 +15,20 @@ type State = {
   current: Game | null;
   /** Finished games, newest first. */
   gallery: Game[];
+  /** Remote drawings already unfolded here (and copied to the gallery), so they leave the friends list. */
+  seenRemote: string[];
 };
 
 const STORAGE_KEY = 'madpix:v0';
 
-let state: State = { ready: false, current: null, gallery: [] };
+let state: State = { ready: false, current: null, gallery: [], seenRemote: [] };
 const listeners = new Set<() => void>();
 
 function setState(next: State) {
   state = next;
   listeners.forEach((l) => l());
-  const { current, gallery } = next;
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ current, gallery })).catch((e) =>
+  const { current, gallery, seenRemote } = next;
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ current, gallery, seenRemote })).catch((e) =>
     console.warn('Could not save MadPix data', e),
   );
 }
@@ -35,7 +37,12 @@ async function hydrate() {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     const saved = raw ? (JSON.parse(raw) as Partial<State>) : {};
-    state = { ready: true, current: saved.current ?? null, gallery: saved.gallery ?? [] };
+    state = {
+      ready: true,
+      current: saved.current ?? null,
+      gallery: saved.gallery ?? [],
+      seenRemote: saved.seenRemote ?? [],
+    };
   } catch (e) {
     console.warn('Could not load MadPix data', e);
     state = { ...state, ready: true };
@@ -103,6 +110,15 @@ export function finishTurn(strokes: Stroke[]): Game | null {
 
 export function quitGame() {
   setState({ ...state, current: null });
+}
+
+/** Called when a finished remote drawing is unfolded: keep a copy and take it off the friends list. */
+export function saveRemoteToGallery(game: Game) {
+  if (state.seenRemote.includes(game.id)) return;
+  const gallery = [{ ...game, remote: true }, ...state.gallery].sort(
+    (a, b) => (b.finishedAt ?? b.createdAt) - (a.finishedAt ?? a.createdAt),
+  );
+  setState({ ...state, gallery, seenRemote: [...state.seenRemote, game.id] });
 }
 
 export function deleteFromGallery(id: string) {

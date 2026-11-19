@@ -32,6 +32,8 @@ export type Game = {
   sections: Section[];
   /** Strokes of the section being drawn now, saved so a crash doesn't lose a turn. */
   draft: Stroke[];
+  /** Drawn with friends over the internet (a copy saved here once unfolded). */
+  remote?: boolean;
 };
 
 /** Index of the artist whose turn it is (equals artists.length when finished). */

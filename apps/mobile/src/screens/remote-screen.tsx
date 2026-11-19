@@ -1,28 +1,23 @@
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { NavigationBar } from "expo-navigation-bar";
-import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { NavigationBar } from 'expo-navigation-bar';
+import { StatusBar } from 'expo-status-bar';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from "@/components/button";
-import { CoverScreen } from "@/components/cover-screen";
-import { ShareImageButton } from "@/components/share-image-button";
-import type { Stroke } from "@/game/types";
-import type { DrawingView } from "@/remote/api";
-import { clearDraft, loadDraft, saveDraft } from "@/remote/drafts";
-import { shareInvite } from "@/remote/invite";
-import { api, usePlayer } from "@/remote/session";
-import { toGame } from "@/remote/to-game";
-import { colors } from "@/theme";
-import { DrawingBoard } from "./drawing-board";
-import { RevealView } from "./reveal-view";
+import { Button } from '@/components/button';
+import { CoverScreen } from '@/components/cover-screen';
+import { ShareImageButton } from '@/components/share-image-button';
+import type { Stroke } from '@/game/types';
+import type { DrawingView } from '@/remote/api';
+import { clearDraft, loadDraft, saveDraft } from '@/remote/drafts';
+import { shareInvite } from '@/remote/invite';
+import { saveRemoteToGallery } from '@/game/store';
+import { api, usePlayer } from '@/remote/session';
+import { toGame } from '@/remote/to-game';
+import { colors } from '@/theme';
+import { DrawingBoard } from './drawing-board';
+import { RevealView } from './reveal-view';
 
 /** How often to check for news while waiting on someone else. Push notifications come later. */
 const POLL_MS = 8000;
@@ -42,8 +37,7 @@ export default function RemoteScreen() {
     try {
       const next = await api.drawing(id);
       setView((prev) => {
-        if (prev && prev.status !== "FINISHED" && next.status === "FINISHED")
-          setJustFinished(true);
+        if (prev && prev.status !== 'FINISHED' && next.status === 'FINISHED') setJustFinished(true);
         return next;
       });
       setError(null);
@@ -58,12 +52,18 @@ export default function RemoteScreen() {
     }, [load]),
   );
 
-  const waiting = view !== null && !view.myTurn && view.status !== "FINISHED";
+  const waiting = view !== null && !view.myTurn && view.status !== 'FINISHED';
   useEffect(() => {
     if (!waiting) return;
     const t = setInterval(load, POLL_MS);
     return () => clearInterval(t);
   }, [waiting, load]);
+
+  // Once unfolded here, a finished drawing lives in the gallery instead of the friends list.
+  const finished = view?.status === 'FINISHED';
+  useEffect(() => {
+    if (finished && view) saveRemoteToGallery(toGame(view));
+  }, [finished, view]);
 
   const myTurn = view?.myTurn ?? false;
   useEffect(() => {
@@ -82,11 +82,7 @@ export default function RemoteScreen() {
           <>
             <Text style={styles.body}>{error}</Text>
             <Button label="Try again" onPress={load} />
-            <Button
-              label="Back"
-              variant="ghost"
-              onPress={() => router.back()}
-            />
+            <Button label="Back" variant="ghost" onPress={() => router.back()} />
           </>
         ) : (
           <ActivityIndicator color={colors.brand} />
@@ -95,20 +91,18 @@ export default function RemoteScreen() {
     );
   }
 
-  const me = session?.player.name ?? "You";
+  const me = session?.player.name ?? 'You';
+  const code = view.inviteCode;
   const openSpots = view.artists.filter((a) => !a.joined).length;
-  const invite = () => shareInvite(view.inviteCode, me);
+  const invite = code ? () => shareInvite(code, me) : undefined;
 
-  if (view.status === "FINISHED") {
+  if (view.status === 'FINISHED') {
     const game = toGame(view);
     return (
       <RevealView game={game} animate={justFinished}>
         <ShareImageButton game={game} />
-        <Button
-          label="Back to your drawings"
-          variant="secondary"
-          onPress={() => router.back()}
-        />
+        <Button label="Back" variant="secondary" onPress={() => router.back()} />
+        <Text style={styles.savedNote}>Saved to your gallery.</Text>
       </RevealView>
     );
   }
@@ -127,12 +121,12 @@ export default function RemoteScreen() {
             clearDraft(id);
             setDraft(null);
             setDrawing(false);
-            if (next.status === "FINISHED") setJustFinished(true);
+            if (next.status === 'FINISHED') setJustFinished(true);
             setView(next);
           }}
           onQuit={() => router.back()}
           quitLabel="Leave (your strip is kept)"
-          onInvite={openSpots > 0 ? invite : undefined}
+          onInvite={invite}
         />
       </>
     );
@@ -144,34 +138,21 @@ export default function RemoteScreen() {
     return (
       <CoverScreen
         step={`Artist ${view.myPosition + 1} of ${view.artistCount}`}
-        title={first ? "You start!" : `Your turn, ${me}!`}
+        title={first ? 'You start!' : `Your turn, ${me}!`}
         body={
           first
-            ? "Draw anything in the top strip. The next artist only sees its bottom edge."
+            ? 'Draw anything in the top strip. The next artist only sees its bottom edge.'
             : `${prev} folded their strip. You'll see a thin sliver of it above yours. Continue from it!`
         }
-        prompt={view.prompt}
-      >
-        {openSpots > 0 && (
-          <InviteCard
-            code={view.inviteCode}
-            openSpots={openSpots}
-            onShare={invite}
-            light
-          />
-        )}
+        prompt={view.prompt}>
+        {code && invite && <InviteCard code={code} openSpots={openSpots} onShare={invite} light />}
         <Button
-          label={draft ? "Let's draw" : "Loading..."}
+          label={draft ? "Let's draw" : 'Loading...'}
           variant="secondary"
           disabled={!draft}
           onPress={() => setDrawing(true)}
         />
-        <Button
-          label="Not now"
-          variant="ghost"
-          onPress={() => router.back()}
-          style={styles.lightGhost}
-        />
+        <Button label="Not now" variant="ghost" onPress={() => router.back()} style={styles.lightGhost} />
       </CoverScreen>
     );
   }
@@ -179,15 +160,10 @@ export default function RemoteScreen() {
   // Someone else's turn, or waiting for someone to join.
   const next = view.artists[view.turn];
   return (
-    <SafeAreaView
-      style={styles.screen}
-      edges={["top", "bottom", "left", "right"]}
-    >
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.waitContent}>
         <Text style={styles.title}>
-          {view.waitingForArtist
-            ? "Waiting for an artist to join"
-            : `${next.name} is drawing`}
+          {view.waitingForArtist ? 'Waiting for an artist to join' : `${next.name} is drawing`}
         </Text>
         <Text style={styles.body}>
           {view.waitingForArtist
@@ -196,26 +172,13 @@ export default function RemoteScreen() {
         </Text>
         <View style={styles.artists}>
           {view.artists.map((a) => (
-            <Text
-              key={a.position}
-              style={[
-                styles.artist,
-                a.position === view.turn && styles.artistNow,
-              ]}
-            >
-              {a.done ? "✓" : a.position === view.turn ? "✎" : "·"}{" "}
-              {a.position + 1}.{" "}
-              {a.isMe ? `${a.name} (you)` : (a.name ?? "Open spot")}
+            <Text key={a.position} style={[styles.artist, a.position === view.turn && styles.artistNow]}>
+              {a.done ? '✓' : a.position === view.turn ? '✎' : '·'} {a.position + 1}.{' '}
+              {a.isMe ? `${a.name} (you)` : (a.name ?? 'Open spot')}
             </Text>
           ))}
         </View>
-        {openSpots > 0 && (
-          <InviteCard
-            code={view.inviteCode}
-            openSpots={openSpots}
-            onShare={invite}
-          />
-        )}
+        {code && invite && <InviteCard code={code} openSpots={openSpots} onShare={invite} />}
         <View style={styles.row}>
           <Button label="Back" variant="ghost" onPress={() => router.back()} />
           <Button label="Refresh" variant="ghost" onPress={load} />
@@ -225,26 +188,16 @@ export default function RemoteScreen() {
   );
 }
 
-function InviteCard(p: {
-  code: string;
-  openSpots: number;
-  onShare: () => void;
-  light?: boolean;
-}) {
+function InviteCard(p: { code: string; openSpots: number; onShare: () => void; light?: boolean }) {
   return (
     <View style={styles.inviteCard}>
       <Text style={styles.inviteLabel}>
-        {p.openSpots} open {p.openSpots === 1 ? "spot" : "spots"}. Invite with
-        code
+        {p.openSpots} open {p.openSpots === 1 ? 'spot' : 'spots'}. Invite with code
       </Text>
       <Text style={styles.inviteCode} selectable>
         {p.code}
       </Text>
-      <Button
-        label="Share invite"
-        variant={p.light ? "secondary" : "primary"}
-        onPress={p.onShare}
-      />
+      <Button label="Share invite" variant={p.light ? 'secondary' : 'primary'} onPress={p.onShare} />
     </View>
   );
 }
@@ -253,49 +206,50 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   center: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 12,
     padding: 24,
   },
   waitContent: {
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 12,
     padding: 24,
   },
   title: {
     fontSize: 24,
-    fontWeight: "900",
+    fontWeight: '900',
     color: colors.ink,
-    textAlign: "center",
+    textAlign: 'center',
   },
   body: {
     fontSize: 16,
     color: colors.muted,
-    textAlign: "center",
+    textAlign: 'center',
     maxWidth: 520,
     lineHeight: 22,
   },
   artists: { gap: 2 },
   artist: { fontSize: 16, color: colors.muted },
-  artistNow: { color: colors.ink, fontWeight: "700" },
-  row: { flexDirection: "row", gap: 12 },
+  artistNow: { color: colors.ink, fontWeight: '700' },
+  row: { flexDirection: 'row', gap: 12 },
   inviteCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    alignItems: "center",
+    alignItems: 'center',
     gap: 6,
   },
   inviteLabel: { fontSize: 13, color: colors.muted },
   inviteCode: {
     fontSize: 30,
-    fontWeight: "900",
-    letterSpacing: 6,
+    fontWeight: '900',
+    letterSpacing: 1,
     color: colors.ink,
   },
   lightGhost: { opacity: 0.9 },
+  savedNote: { fontSize: 13, color: colors.muted, textAlign: 'center' },
 });

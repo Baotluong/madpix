@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.module.kotlin.readValue
-import java.security.SecureRandom
 import java.time.Clock
 import java.util.UUID
 
@@ -47,10 +46,11 @@ class DrawingService(
     }
 
     fun invite(code: String): InviteView {
-        val d = drawings.findByInviteCode(normalize(code)) ?: notFound("No drawing with that code")
+        val normalized = InviteCodes.normalize(code)
+        val d = drawings.findByInviteCode(normalized) ?: notFound(NO_CODE)
         val seats = drawings.seats(d.id)
         return InviteView(
-            inviteCode = d.inviteCode,
+            inviteCode = normalized,
             artistCount = d.artistCount,
             artists = seats.map { it.playerName },
             spotsLeft = d.artistCount - seats.size,
@@ -61,13 +61,16 @@ class DrawingService(
     /** Takes the next open spot. Joining a drawing you're already in just returns it. */
     @Transactional
     fun join(me: Player, code: String): DrawingView {
-        val d = drawings.findByInviteCode(normalize(code)) ?: notFound("No drawing with that code")
+        val d = drawings.findByInviteCode(InviteCodes.normalize(code)) ?: notFound(NO_CODE)
         val seats = drawings.seats(d.id)
         if (seats.any { it.playerId == me.id }) return view(d, seats, me)
         if (d.finishedAt != null) conflict("This drawing is already finished")
         if (seats.size >= d.artistCount) conflict("This drawing is full")
         drawings.insertSeat(d.id, seats.size, me.id, clock.instant())
-        return view(d, drawings.seats(d.id), me)
+        // The last spot is taken: free the code for another drawing.
+        val full = seats.size + 1 == d.artistCount
+        if (full) drawings.clearInviteCode(d.id)
+        return view(if (full) d.copy(inviteCode = null) else d, drawings.seats(d.id), me)
     }
 
     fun list(me: Player): List<DrawingView> {
@@ -151,19 +154,14 @@ class DrawingService(
     private fun strokesOf(seat: SeatRow): List<Stroke> = seat.strokes?.let { json.readValue(it) } ?: emptyList()
 
     private fun newInviteCode(): String {
-        repeat(20) {
-            val code = (1..CODE_LENGTH).map { CODE_ALPHABET[random.nextInt(CODE_ALPHABET.length)] }.joinToString("")
+        repeat(50) {
+            val code = InviteCodes.random()
             if (!drawings.inviteCodeTaken(code)) return code
         }
         error("Couldn't find a free invite code")
     }
 
-    private fun normalize(code: String) = code.trim().uppercase()
-
     private companion object {
-        /** No 0/O, 1/I/L: codes get read aloud and typed on phones. */
-        const val CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
-        const val CODE_LENGTH = 6
-        val random = SecureRandom()
+        const val NO_CODE = "No open drawing with that code. Check the spelling, or it may be full already."
     }
 }

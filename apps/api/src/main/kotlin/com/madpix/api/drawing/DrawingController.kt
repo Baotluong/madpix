@@ -23,7 +23,7 @@ class DrawingController(private val service: DrawingService) {
         @field:Size(max = 30) val prompt: String? = null,
     )
 
-    data class JoinRequest(@field:NotBlank @field:Size(max = 12) val code: String)
+    data class JoinRequest(@field:NotBlank @field:Size(max = 20) val code: String)
 
     data class StripRequest(val strokes: List<Stroke>)
 

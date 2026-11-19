@@ -10,7 +10,9 @@ CREATE TABLE players (
 -- One drawing = one folded page. Private for now; public drawings come later.
 CREATE TABLE drawings (
     id            TEXT PRIMARY KEY,
-    invite_code   TEXT NOT NULL UNIQUE,
+    -- Like "goose14". Only needed while spots are open; cleared when the drawing fills,
+    -- so short codes can be reused. (SQLite allows many NULLs in a UNIQUE column.)
+    invite_code   TEXT UNIQUE,
     visibility    TEXT NOT NULL DEFAULT 'private' CHECK (visibility IN ('private', 'public')),
     artist_count  INTEGER NOT NULL CHECK (artist_count BETWEEN 2 AND 4),
     strip_h       INTEGER NOT NULL,

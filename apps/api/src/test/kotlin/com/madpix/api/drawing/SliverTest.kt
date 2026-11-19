@@ -48,3 +48,12 @@ class SliverTest {
         assertEquals(listOf(dot), sliverOf(listOf(dot), stripH))
     }
 }
+
+class InviteCodesTest {
+    @Test
+    fun `codes are a word and a number, and typing them loosely still matches`() {
+        repeat(200) { assertTrue(Regex("^[a-z]+[0-9]{1,2}$").matches(InviteCodes.random())) }
+        assertEquals("goose14", InviteCodes.normalize(" Goose 14 "))
+        assertEquals("goose14", InviteCodes.normalize("GOOSE-14"))
+    }
+}
