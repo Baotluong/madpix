@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
@@ -6,6 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { useGameStore } from '@/game/store';
 import { colors } from '@/theme';
+
+/** e.g. "0.1.0 · 095eb16", so you can tell which code is running. "+" means uncommitted changes. */
+const BUILD = [Constants.expoConfig?.version, Constants.expoConfig?.extra?.commit].filter(Boolean).join(' · ');
 
 export default function Home() {
   const ready = useGameStore((s) => s.ready);
@@ -38,6 +42,7 @@ export default function Home() {
           variant="ghost"
           onPress={() => router.push('/gallery')}
         />
+        <Text style={styles.build}>{BUILD}</Text>
       </SafeAreaView>
     </View>
   );
@@ -59,4 +64,5 @@ const styles = StyleSheet.create({
   elephant: { width: 260, height: 120 },
   tagline: { fontSize: 17, color: colors.card, textAlign: 'center', lineHeight: 24 },
   actions: { flex: 2, justifyContent: 'center', padding: 24, gap: 12, maxWidth: 420 },
+  build: { position: 'absolute', right: 12, bottom: 8, fontSize: 11, color: colors.muted, opacity: 0.7 },
 });
