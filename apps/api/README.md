@@ -1,0 +1,63 @@
+# MadPix API
+
+Kotlin + Spring Boot API for remote play: anonymous players, private drawings with invite
+codes, turn order, the sliver cut on the server, and push notifications through Expo.
+
+## Run it
+
+Needs JDK 21. Gradle comes with the project.
+
+```bash
+./gradlew test       # unit + end-to-end API tests on a throwaway SQLite file
+./gradlew bootRun    # http://localhost:8080, data in ./madpix.db
+```
+
+## How a drawing works
+
+1. The app creates a player once (`POST /players`) and keeps the returned token. Every
+   other call sends it as `Authorization: Bearer <token>`. The database stores only its hash.
+2. Artist 1 creates a drawing (`POST /drawings`) and can draw at once. The drawing has a
+   6-letter invite code to share.
+3. Others join with the code (`POST /drawings/join`) whenever they like, taking the next
+   open spot. `GET /invites/{code}` shows who's in before joining.
+4. Each artist folds their strip (`POST /drawings/{id}/strip`) on their turn. The next artist
+   gets a push. If their spot isn't taken yet, the drawing waits until someone joins.
+5. After the last strip, everyone gets a push and `GET /drawings/{id}` returns all strips.
+
+The next artist only ever receives the **sliver**: the bottom 10% of the strip above,
+with strokes cut at the band's edge on the server (`drawing/Sliver.kt`). The full strip
+never reaches their phone.
+
+| Method | Path | What |
+|---|---|---|
+| `POST` | `/players` | New anonymous player → `{ player, token }` |
+| `GET` / `PATCH` | `/players/me` | Read, or change name / Expo push token |
+| `POST` | `/drawings` | Start a drawing (`artistCount` 2–4, optional `prompt`) |
+| `GET` | `/drawings` | My drawings, most recent first |
+| `GET` | `/drawings/{id}` | One drawing, as I'm allowed to see it |
+| `POST` | `/drawings/join` | Join with `{ code }` |
+| `POST` | `/drawings/{id}/strip` | Fold my strip: `{ strokes }` |
+| `GET` | `/invites/{code}` | Peek at a drawing before joining |
+| `GET` | `/healthz` | Health check |
+
+Errors are RFC 9457 problem details, e.g. `{"status": 409, "detail": "It's not your turn"}`.
+
+## Layout
+
+| Path | What |
+|---|---|
+| `player/` | Anonymous players, token auth (`@CurrentPlayer`) |
+| `drawing/` | Rules (`DrawingService`), SQL (`DrawingRepository`), sliver cutting, validation |
+| `push/` | Expo push sender; notifications go out after the transaction commits |
+| `resources/db/migration/` | Flyway migrations (SQLite) |
+
+## Deploy (Fly.io)
+
+```bash
+fly apps create madpix-api
+fly volumes create madpix_data --size 1 --region iad
+fly deploy
+```
+
+SQLite allows one writer, so the app runs on a single machine with one database
+connection. That also makes joining and folding strictly one-at-a-time.
