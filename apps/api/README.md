@@ -53,11 +53,16 @@ Errors are RFC 9457 problem details, e.g. `{"status": 409, "detail": "It's not y
 
 ## Deploy (Fly.io)
 
+Live at https://madpix-api.fly.dev (health check: `/healthz`). The first deploy:
+
 ```bash
 fly apps create madpix-api
 fly volumes create madpix_data --size 1 --region iad
-fly deploy
+fly deploy --ha=false
 ```
+
+After that, `fly deploy` from this folder. The machine stops when idle, so the first request
+after a quiet spell waits about 15 seconds while it boots.
 
 SQLite allows one writer, so the app runs on a single machine with one database
 connection. That also makes joining and folding strictly one-at-a-time.

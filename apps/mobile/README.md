@@ -17,15 +17,16 @@ set in `app.config.js`. Restart with `npx expo start --clear` after committing t
 
 ## Remote play (v1)
 
-"Send around" talks to the API in `apps/api`. In development the app looks for it on
-port 8080 of the computer running Expo, so start both:
+"Send around" talks to the API in `apps/api`. By default the app uses the deployed one at
+https://madpix-api.fly.dev (set in `.env`).
+
+To work on the API locally, point the app at your Mac instead:
 
 ```bash
-(cd ../api && ./gradlew bootRun)   # API on :8080
-npx expo start                     # phone and Mac on the same Wi-Fi
+echo "EXPO_PUBLIC_API_URL=local" > .env.local   # git ignores it
+(cd ../api && ./gradlew bootRun)               # API on :8080
+npx expo start --clear                         # phone and Mac on the same Wi-Fi
 ```
-
-Set `EXPO_PUBLIC_API_URL` to use a deployed API instead.
 
 ## How it's built
 

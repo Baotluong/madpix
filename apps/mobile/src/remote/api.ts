@@ -4,11 +4,12 @@ import { Platform } from 'react-native';
 import type { Stroke } from '@/game/types';
 
 /**
- * Where the MadPix API lives. Set EXPO_PUBLIC_API_URL to point at a deployed API.
- * In development it defaults to port 8080 on the same computer that serves the app,
- * so a phone in Expo Go reaches the API running on your Mac.
+ * Where the MadPix API lives: EXPO_PUBLIC_API_URL, set in .env to the deployed API on Fly.
+ * "local" (or unset) means port 8080 on the computer serving the app, so a phone in Expo Go
+ * reaches an API running on your Mac.
  */
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? devApiUrl();
+const CONFIGURED = process.env.EXPO_PUBLIC_API_URL;
+export const API_URL = CONFIGURED && CONFIGURED !== 'local' ? CONFIGURED : devApiUrl();
 
 function devApiUrl() {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
