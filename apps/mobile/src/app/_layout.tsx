@@ -15,7 +15,8 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+      {/* No status bar anywhere: in landscape its clock sits on top of the header's back button. */}
+      <StatusBar hidden />
       <Stack
         screenOptions={{
           headerTintColor: colors.brandDark,

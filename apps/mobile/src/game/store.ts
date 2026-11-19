@@ -17,18 +17,20 @@ type State = {
   gallery: Game[];
   /** Remote drawings already unfolded here (and copied to the gallery), so they leave the friends list. */
   seenRemote: string[];
+  /** Mode intros ("send", "pass") this device has already shown once. */
+  seenIntros: string[];
 };
 
 const STORAGE_KEY = 'madpix:v0';
 
-let state: State = { ready: false, current: null, gallery: [], seenRemote: [] };
+let state: State = { ready: false, current: null, gallery: [], seenRemote: [], seenIntros: [] };
 const listeners = new Set<() => void>();
 
 function setState(next: State) {
   state = next;
   listeners.forEach((l) => l());
-  const { current, gallery, seenRemote } = next;
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ current, gallery, seenRemote })).catch((e) =>
+  const { current, gallery, seenRemote, seenIntros } = next;
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ current, gallery, seenRemote, seenIntros })).catch((e) =>
     console.warn('Could not save MadPix data', e),
   );
 }
@@ -42,6 +44,7 @@ async function hydrate() {
       current: saved.current ?? null,
       gallery: saved.gallery ?? [],
       seenRemote: saved.seenRemote ?? [],
+      seenIntros: saved.seenIntros ?? [],
     };
   } catch (e) {
     console.warn('Could not load MadPix data', e);
@@ -119,6 +122,10 @@ export function saveRemoteToGallery(game: Game) {
     (a, b) => (b.finishedAt ?? b.createdAt) - (a.finishedAt ?? a.createdAt),
   );
   setState({ ...state, gallery, seenRemote: [...state.seenRemote, game.id] });
+}
+
+export function markIntroSeen(key: string) {
+  if (!state.seenIntros.includes(key)) setState({ ...state, seenIntros: [...state.seenIntros, key] });
 }
 
 export function deleteFromGallery(id: string) {

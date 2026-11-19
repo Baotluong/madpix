@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { DieButton } from '@/components/die-button';
+import { ModeIntro } from '@/components/mode-intro';
 import { NameField } from '@/components/name-field';
 import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
@@ -92,10 +93,7 @@ export default function Friends() {
   return (
     <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.intro}>
-          Online. Each artist draws on their own phone, whenever they&apos;re free. Everyone in the same room?
-          Use Pass around.
-        </Text>
+        <ModeIntro mode="send" />
         <View style={styles.nameBlock}>
           <Text style={styles.nameLabel}>You&apos;re drawing as</Text>
           <NameField value={name} onChange={setName} />
@@ -104,7 +102,6 @@ export default function Friends() {
         <View style={styles.modes}>
           <View style={styles.card}>
             <Text style={styles.title}>Start a drawing</Text>
-            <Text style={styles.hint}>You draw first, right away. Invite friends while you draw.</Text>
             <View style={styles.segment}>
               {COUNTS.map((n) => (
                 <Pressable
@@ -149,12 +146,11 @@ export default function Friends() {
 
           <View style={styles.card}>
             <Text style={styles.title}>Join a drawing</Text>
-            <Text style={styles.hint}>Got a code from a friend, like goose14? Type it here.</Text>
             <TextInput
               style={[styles.input, styles.code]}
               value={code}
               onChangeText={setCode}
-              placeholder="goose14"
+              placeholder="Code, like goose14"
               placeholderTextColor={colors.line}
               autoCapitalize="none"
               autoCorrect={false}
@@ -221,7 +217,6 @@ function DrawingCard({ view }: { view: DrawingView }) {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 14, width: '100%', maxWidth: 900, alignSelf: 'center' },
-  intro: { fontSize: 15, color: colors.muted, lineHeight: 21, textAlign: 'center' },
   nameBlock: { alignSelf: 'center', width: '100%', maxWidth: 420, gap: 4 },
   nameLabel: { fontSize: 14, fontWeight: '700', color: colors.muted, textAlign: 'center' },
   modes: { flexDirection: 'row', gap: 14 },

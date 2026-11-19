@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { DieButton } from '@/components/die-button';
+import { ModeIntro } from '@/components/mode-intro';
 import { NameField } from '@/components/name-field';
 import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
@@ -38,22 +39,17 @@ export default function NewDrawing() {
   return (
     <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.intro}>
-          <Text style={styles.introText}>
-            Everyone&apos;s in the same room. Each artist draws their part, folds it, and passes this device
-            to the next. For friends who aren&apos;t here, use Send around.
-          </Text>
-          {current && (
-            <Button
-              label="Continue"
-              sublabel={`${current.artists[current.sections.length]}'s turn`}
-              onPress={() => router.replace('/play')}
-            />
-          )}
-        </View>
+        <ModeIntro mode="pass" />
+        {current && (
+          <View style={styles.resume}>
+            <Text style={styles.resumeText}>
+              A drawing is in progress: {current.artists[current.sections.length]}&apos;s turn.
+            </Text>
+            <Button label="Continue" variant="secondary" onPress={() => router.replace('/play')} />
+          </View>
+        )}
         <View style={styles.column}>
           <Text style={styles.label}>How many artists?</Text>
-          <Text style={styles.hint}>The page gets folded into one strip per artist.</Text>
           <View style={styles.segment}>
             {COUNTS.map((n) => (
               <Pressable
@@ -82,13 +78,7 @@ export default function NewDrawing() {
 
         <View style={styles.column}>
           <View style={styles.inspoHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Inspo word</Text>
-              <Text style={styles.hint}>
-                Stuck? Everyone gets the same word, but nobody knows which part they&apos;re drawing. It&apos;s
-                just a suggestion.
-              </Text>
-            </View>
+            <Text style={[styles.label, { flex: 1 }]}>Inspo word</Text>
             <Switch
               value={inspoOn}
               onValueChange={setInspoOn}
@@ -152,8 +142,17 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   nameInput: { flexGrow: 1, flexBasis: 220 },
-  intro: { flexBasis: '100%', flexDirection: 'row', alignItems: 'center', gap: 16 },
-  introText: { flex: 1, fontSize: 15, color: colors.muted, lineHeight: 21 },
+  resume: {
+    flexBasis: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  resumeText: { flex: 1, fontSize: 15, color: colors.ink, fontWeight: '600' },
   inspoHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   inspoRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
 });
