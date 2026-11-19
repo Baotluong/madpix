@@ -5,10 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { DieButton } from '@/components/die-button';
+import { NameField } from '@/components/name-field';
 import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
 import { startGame, useGameStore } from '@/game/store';
 import { confirm } from '@/lib/confirm';
+import { randomArtistNames } from '@/remote/names';
 import { colors } from '@/theme';
 
 const COUNTS = Array.from({ length: MAX_ARTISTS - MIN_ARTISTS + 1 }, (_, i) => MIN_ARTISTS + i);
@@ -16,14 +18,14 @@ const COUNTS = Array.from({ length: MAX_ARTISTS - MIN_ARTISTS + 1 }, (_, i) => M
 export default function NewDrawing() {
   const current = useGameStore((s) => s.current);
   const [count, setCount] = useState(2);
-  const [names, setNames] = useState<string[]>(Array(MAX_ARTISTS).fill(''));
+  const [names, setNames] = useState<string[]>(() => randomArtistNames(MAX_ARTISTS));
   const [inspoOn, setInspoOn] = useState(true);
   const [prompt, setPrompt] = useState(() => randomPrompt());
 
   const start = async () => {
     if (
       current &&
-      !(await confirm('Start over?', 'This throws away the drawing in progress.', 'Start new'))
+      !(await confirm('Start over?', `This throws away the drawing in progress (${current.artists[current.sections.length]}'s turn).`, 'Start new'))
     ) {
       return;
     }
@@ -36,6 +38,19 @@ export default function NewDrawing() {
   return (
     <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.intro}>
+          <Text style={styles.introText}>
+            Everyone&apos;s in the same room. Each artist draws their part, folds it, and passes this device
+            to the next. For friends who aren&apos;t here, use Send around.
+          </Text>
+          {current && (
+            <Button
+              label="Continue"
+              sublabel={`${current.artists[current.sections.length]}'s turn`}
+              onPress={() => router.replace('/play')}
+            />
+          )}
+        </View>
         <View style={styles.column}>
           <Text style={styles.label}>How many artists?</Text>
           <Text style={styles.hint}>The page gets folded into one strip per artist.</Text>
@@ -50,18 +65,17 @@ export default function NewDrawing() {
             ))}
           </View>
 
-          <Text style={styles.label}>Names (optional)</Text>
+          <Text style={styles.label}>Artists</Text>
           <View style={styles.names}>
             {Array.from({ length: count }, (_, i) => (
-              <TextInput
-                key={i}
-                style={[styles.input, styles.nameInput]}
-                placeholder={`Artist ${i + 1}`}
-                placeholderTextColor={colors.muted}
-                value={names[i]}
-                maxLength={20}
-                onChangeText={(t) => setNames((prev) => prev.map((p, j) => (j === i ? t : p)))}
-              />
+              <View key={i} style={styles.nameInput}>
+                <NameField
+                  value={names[i]}
+                  placeholder={`Artist ${i + 1}`}
+                  avoid={names.slice(0, count)}
+                  onChange={(t) => setNames((prev) => prev.map((p, j) => (j === i ? t : p)))}
+                />
+              </View>
             ))}
           </View>
         </View>
@@ -137,7 +151,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.ink,
   },
-  nameInput: { flexGrow: 1, flexBasis: '45%' },
+  nameInput: { flexGrow: 1, flexBasis: 220 },
+  intro: { flexBasis: '100%', flexDirection: 'row', alignItems: 'center', gap: 16 },
+  introText: { flex: 1, fontSize: 15, color: colors.muted, lineHeight: 21 },
   inspoHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   inspoRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
 });

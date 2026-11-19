@@ -23,11 +23,11 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.bg },
         }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="new" options={{ title: 'New drawing' }} />
+        <Stack.Screen name="new" options={{ title: 'Pass around' }} />
         <Stack.Screen name="play" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="reveal/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="gallery" options={{ title: 'Gallery' }} />
-        <Stack.Screen name="friends" options={{ title: 'Draw with friends' }} />
+        <Stack.Screen name="friends" options={{ title: 'Send around' }} />
         <Stack.Screen name="join/[code]" options={{ title: 'Join a drawing' }} />
         <Stack.Screen name="remote/[id]" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack>

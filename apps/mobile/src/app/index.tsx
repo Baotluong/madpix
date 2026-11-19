@@ -47,22 +47,23 @@ export default function Home() {
       </SafeAreaView>
 
       <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.actions}>
-        {ready && current && (
-          <Button
-            label={`Continue drawing (${current.artists[current.sections.length]}'s turn)`}
-            onPress={() => router.push('/play')}
-          />
-        )}
         <Button
-          label="New drawing"
-          variant={current ? 'secondary' : 'primary'}
-          onPress={() => router.push('/new')}
-          disabled={!ready}
+          label="Send around"
+          sublabel={
+            needsMe ? `Online · ${needsMe} waiting on you` : 'Online · everyone draws on their own phone'
+          }
+          onPress={() => router.push('/friends')}
         />
         <Button
-          label={needsMe ? `Draw with friends (${needsMe} waiting on you)` : 'Draw with friends'}
+          label="Pass around"
+          sublabel={
+            ready && current
+              ? `Same device · ${current.artists[current.sections.length]}'s turn`
+              : 'Same device · take turns on this one'
+          }
           variant="secondary"
-          onPress={() => router.push('/friends')}
+          onPress={() => router.push('/new')}
+          disabled={!ready}
         />
         <Button
           label={galleryCount ? `Gallery (${galleryCount})` : 'Gallery'}

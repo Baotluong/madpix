@@ -22,6 +22,6 @@ export async function shareInvite(code: string, from: string) {
   }
   const message =
     `${from} wants you to draw on a MadPix page! ` +
-    `Open MadPix, tap "Draw with friends" and join with code ${code}.`;
+    `Open MadPix, tap "Send around" and join with code ${code}.`;
   await Share.share({ message }).catch(() => {});
 }

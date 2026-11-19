@@ -39,8 +39,17 @@ const PAIRS = [...firsts.keys()]
   .filter((name) => name.length <= MAX);
 
 /** A random name, different from `not` if given. */
-export function randomArtistName(not?: string): string {
+/** A random name that isn't `not` (one name, or the names already taken). */
+export function randomArtistName(not?: string | string[]): string {
+  const taken = new Set(typeof not === 'string' ? [not] : (not ?? []));
   let name = pick(PAIRS);
-  while (name === not && PAIRS.length > 1) name = pick(PAIRS);
+  for (let tries = 0; taken.has(name) && tries < 50; tries++) name = pick(PAIRS);
   return name;
+}
+
+/** `count` different random names, for a table of artists. */
+export function randomArtistNames(count: number): string[] {
+  const names: string[] = [];
+  while (names.length < count) names.push(randomArtistName(names));
+  return names;
 }

@@ -1,6 +1,6 @@
 # MadPix mobile app
 
-Expo (React Native + TypeScript) app for Android, iOS and web. v0 is pass-and-play: one device, passed between artists.
+Expo (React Native + TypeScript) app for Android, iOS and web. Two modes: **Send around** (online, each artist on their own phone) and **Pass around** (one device, passed between artists).
 
 ## Run it
 
@@ -17,7 +17,7 @@ set in `app.config.js`. Restart with `npx expo start --clear` after committing t
 
 ## Remote play (v1)
 
-"Draw with friends" talks to the API in `apps/api`. In development the app looks for it on
+"Send around" talks to the API in `apps/api`. In development the app looks for it on
 port 8080 of the computer running Expo, so start both:
 
 ```bash
@@ -31,7 +31,7 @@ Set `EXPO_PUBLIC_API_URL` to use a deployed API instead.
 
 | Path | What |
 |---|---|
-| `src/app/` | Screens (Expo Router): home, new drawing, play, reveal, gallery, draw with friends, join |
+| `src/app/` | Screens (Expo Router): home, Pass around setup (`new`), play, reveal, gallery, Send around (`friends`), join |
 | `src/screens/` | Screens that draw with Skia, loaded lazily so web can load Skia's WebAssembly first |
 | `src/drawing/` | Skia drawing canvas, toolbar, whole-page view, PNG export |
 | `src/game/` | Game data types, local store (AsyncStorage), inspo word list |
