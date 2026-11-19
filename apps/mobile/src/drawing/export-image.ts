@@ -3,15 +3,16 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
-import { SECTION } from '@/game/geometry';
+import { STRIP_W, stripHeight } from '@/game/geometry';
 import type { Game } from '@/game/types';
 import { colors } from '@/theme';
 import { strokePath } from './strokes';
 
 /** Renders the whole unfolded page to a PNG, returned as base64. */
 export function renderPagePng(game: Game, widthPx = 900): string {
-  const scale = widthPx / SECTION;
-  const heightPx = Math.round(widthPx * game.sections.length);
+  const scale = widthPx / STRIP_W;
+  const unitsH = stripHeight(game);
+  const heightPx = Math.round(unitsH * scale * game.sections.length);
   const surface = Skia.Surface.Make(widthPx, heightPx);
   if (!surface) throw new Error('Could not create an image surface');
   const canvas = surface.getCanvas();
@@ -26,9 +27,9 @@ export function renderPagePng(game: Game, widthPx = 900): string {
   game.sections.forEach((section, i) => {
     canvas.save();
     canvas.scale(scale, scale);
-    canvas.translate(0, i * SECTION);
+    canvas.translate(0, i * unitsH);
     // Keep each artist's ink inside their own fold.
-    canvas.clipRect(Skia.XYWHRect(0, 0, SECTION, SECTION), 1, true);
+    canvas.clipRect(Skia.XYWHRect(0, 0, STRIP_W, unitsH), 1, true);
     for (const stroke of section.strokes) {
       paint.setColor(Skia.Color(stroke.color));
       paint.setStrokeWidth(stroke.width);

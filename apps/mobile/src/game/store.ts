@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
+import { STRIP_H } from './geometry';
 import { isFinished, type Game, type Stroke } from './types';
 
 /**
@@ -62,6 +63,7 @@ export function startGame(artists: string[], prompt: string | null): Game {
   const game: Game = {
     id: newId(),
     createdAt: Date.now(),
+    stripH: STRIP_H,
     artists,
     prompt,
     sections: [],

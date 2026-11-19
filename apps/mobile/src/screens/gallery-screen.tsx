@@ -3,10 +3,11 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { SectionCanvas } from '@/drawing/strokes';
+import { stripHeight } from '@/game/geometry';
 import { useGameStore } from '@/game/store';
 import { colors } from '@/theme';
 
-const THUMB = 72;
+const THUMB = 96;
 
 export default function GalleryScreen() {
   const gallery = useGameStore((s) => s.gallery);
@@ -31,7 +32,7 @@ export default function GalleryScreen() {
           onPress={() => router.push({ pathname: '/reveal/[id]', params: { id: item.id } })}>
           <View style={styles.thumb}>
             {item.sections.map((s, i) => (
-              <SectionCanvas key={i} strokes={s.strokes} width={THUMB} />
+              <SectionCanvas key={i} strokes={s.strokes} width={THUMB} unitsH={stripHeight(item)} />
             ))}
           </View>
           <View style={{ flex: 1, gap: 4 }}>

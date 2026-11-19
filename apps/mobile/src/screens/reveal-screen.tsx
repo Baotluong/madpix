@@ -6,6 +6,7 @@ import Animated, { FadeIn, FlipInXDown } from 'react-native-reanimated';
 import { Button } from '@/components/button';
 import { sharePage } from '@/drawing/export-image';
 import { SectionCanvas } from '@/drawing/strokes';
+import { stripHeight } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
 import { deleteFromGallery, startGame, useGameStore } from '@/game/store';
 import { confirm } from '@/lib/confirm';
@@ -65,7 +66,7 @@ export default function RevealScreen() {
           <Animated.View
             key={i}
             entering={animate ? FlipInXDown.delay(400 + i * STEP_MS).duration(STEP_MS) : undefined}>
-            <SectionCanvas strokes={section.strokes} width={width} />
+            <SectionCanvas strokes={section.strokes} width={width} unitsH={stripHeight(game)} />
           </Animated.View>
         ))}
       </View>

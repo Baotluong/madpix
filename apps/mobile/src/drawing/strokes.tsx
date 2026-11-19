@@ -2,7 +2,7 @@ import { Canvas, Group, Path, Skia, type SkPath } from '@shopify/react-native-sk
 import { memo, useMemo } from 'react';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
-import { SECTION } from '@/game/geometry';
+import { STRIP_W } from '@/game/geometry';
 import type { Stroke } from '@/game/types';
 import { colors } from '@/theme';
 
@@ -65,17 +65,19 @@ export const Strokes = memo(function Strokes({ strokes }: { strokes: Stroke[] })
 
 type SectionCanvasProps = {
   strokes: Stroke[];
-  /** Width on screen in px. The height follows from fromY/toY. */
+  /** Width on screen in px. The height follows from the strip's shape. */
   width: number;
-  /** Which horizontal band of the section to show, in section units. */
+  /** Height of the strip in units (see stripHeight in geometry.ts). */
+  unitsH: number;
+  /** Which horizontal band of the strip to show, in units. Defaults to all of it. */
   fromY?: number;
   toY?: number;
   style?: StyleProp<ViewStyle>;
 };
 
-/** Draws one section (or a band of it, like the sliver) at a given screen width. */
-export function SectionCanvas({ strokes, width, fromY = 0, toY = SECTION, style }: SectionCanvasProps) {
-  const scale = width / SECTION;
+/** Draws one strip (or a band of it, like the sliver) at a given screen width. */
+export function SectionCanvas({ strokes, width, unitsH, fromY = 0, toY = unitsH, style }: SectionCanvasProps) {
+  const scale = width / STRIP_W;
   const height = (toY - fromY) * scale;
   return (
     // Skia's web canvas needs a flat style object, not an array.

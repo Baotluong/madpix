@@ -1,4 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { colors, PALETTE, SIZES } from '@/theme';
 
@@ -10,6 +13,8 @@ type Props = {
   sizeIndex: number;
   canUndo: boolean;
   canRedo: boolean;
+  /** Side panel (landscape) instead of rows under the canvas. */
+  vertical?: boolean;
   onTool: (t: Tool) => void;
   onColor: (c: string) => void;
   onSize: (i: number) => void;
@@ -20,9 +25,10 @@ type Props = {
 
 /** Deliberately small: a pen in 3 sizes, an eraser, 8 colors, undo/redo, clear. */
 export function Toolbar(p: Props) {
+  const swatchSize = p.vertical ? 32 : 30;
   return (
-    <View style={styles.wrap}>
-      <View style={styles.row}>
+    <View style={[styles.wrap, p.vertical && styles.wrapVertical]}>
+      <View style={[styles.row, p.vertical && styles.grid]}>
         {PALETTE.map((c) => {
           const selected = p.tool === 'pen' && p.color === c;
           return (
@@ -33,54 +39,79 @@ export function Toolbar(p: Props) {
                 p.onColor(c);
                 p.onTool('pen');
               }}
-              style={[styles.swatch, { backgroundColor: c }, selected && styles.swatchSelected]}
+              style={[
+                styles.swatch,
+                { backgroundColor: c, width: swatchSize, height: swatchSize, borderRadius: swatchSize / 2 },
+                selected && styles.swatchSelected,
+              ]}
             />
           );
         })}
       </View>
-      <View style={styles.row}>
+      <View style={[styles.row, p.vertical && styles.grid]}>
         {SIZES.map((s, i) => (
-          <Pressable
+          <IconButton
             key={s}
-            accessibilityLabel={['Small', 'Medium', 'Large'][i] + ' brush'}
-            onPress={() => p.onSize(i)}
-            style={[styles.sizeBtn, p.sizeIndex === i && styles.btnSelected]}>
+            label={['Small', 'Medium', 'Large'][i] + ' brush'}
+            selected={p.sizeIndex === i}
+            onPress={() => p.onSize(i)}>
             <View
               style={{
-                width: 6 + i * 6,
-                height: 6 + i * 6,
-                borderRadius: 20,
-                backgroundColor: p.tool === 'eraser' ? colors.muted : p.color,
+                width: 5 + i * 5,
+                height: 5 + i * 5,
+                borderRadius: 10,
+                backgroundColor:
+                  p.sizeIndex === i ? colors.card : p.tool === 'eraser' ? colors.muted : p.color,
               }}
             />
-          </Pressable>
+          </IconButton>
         ))}
-        <ToolButton label="Eraser" selected={p.tool === 'eraser'} onPress={() => p.onTool('eraser')} />
-        <ToolButton label="Undo" disabled={!p.canUndo} onPress={p.onUndo} />
-        <ToolButton label="Redo" disabled={!p.canRedo} onPress={p.onRedo} />
-        <ToolButton label="Clear" disabled={!p.canUndo} onPress={p.onClear} />
+      </View>
+      <View style={[styles.row, p.vertical && styles.grid]}>
+        <IconButton label="Eraser" selected={p.tool === 'eraser'} onPress={() => p.onTool('eraser')}>
+          <MaterialCommunityIcons name="eraser" size={20} color={p.tool === 'eraser' ? colors.card : colors.ink} />
+        </IconButton>
+        <IconButton label="Undo" disabled={!p.canUndo} onPress={p.onUndo}>
+          <Ionicons name="arrow-undo" size={18} color={colors.ink} />
+        </IconButton>
+        <IconButton label="Redo" disabled={!p.canRedo} onPress={p.onRedo}>
+          <Ionicons name="arrow-redo" size={18} color={colors.ink} />
+        </IconButton>
+        <IconButton label="Clear" disabled={!p.canUndo} onPress={p.onClear}>
+          <Ionicons name="trash-outline" size={18} color={colors.ink} />
+        </IconButton>
       </View>
     </View>
   );
 }
 
-function ToolButton(props: { label: string; selected?: boolean; disabled?: boolean; onPress: () => void }) {
+function IconButton(props: {
+  label: string;
+  selected?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+  children: ReactNode;
+}) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={props.label}
       onPress={props.onPress}
       disabled={props.disabled}
-      style={[styles.toolBtn, props.selected && styles.btnSelected, props.disabled && { opacity: 0.35 }]}>
-      <Text style={[styles.toolText, props.selected && { color: colors.card }]}>{props.label}</Text>
+      style={[styles.iconBtn, props.selected && styles.btnSelected, props.disabled && { opacity: 0.3 }]}>
+      {props.children}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { gap: 10, paddingVertical: 8 },
+  wrapVertical: { gap: 14, paddingVertical: 0 },
   row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8 },
-  swatch: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: colors.card },
+  grid: { gap: 6, width: 164 },
+  swatch: { borderWidth: 2, borderColor: colors.card },
   swatchSelected: { borderColor: colors.ink, transform: [{ scale: 1.15 }] },
-  sizeBtn: {
+  iconBtn: {
     width: 36,
     height: 36,
     borderRadius: 8,
@@ -89,6 +120,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   btnSelected: { backgroundColor: colors.brandDark },
-  toolBtn: { paddingHorizontal: 10, height: 36, borderRadius: 8, justifyContent: 'center', backgroundColor: colors.card },
-  toolText: { fontSize: 13, fontWeight: '600', color: colors.ink },
 });

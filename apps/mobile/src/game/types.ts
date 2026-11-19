@@ -2,8 +2,8 @@
  * Core game data. Drawings are stored as vector strokes (not pixels) so they
  * stay small, scale to any screen, and can be replayed later.
  *
- * Coordinates are in "section units": every section is a SECTION x SECTION
- * square (see geometry.ts), regardless of the device it was drawn on.
+ * Coordinates are in "strip units": every strip is STRIP_W wide (see
+ * geometry.ts), regardless of the device it was drawn on.
  */
 
 export type Stroke = {
@@ -24,6 +24,8 @@ export type Game = {
   createdAt: number;
   finishedAt?: number;
   artists: string[];
+  /** Height of each strip in units (width is always STRIP_W). Missing on old square-strip games. */
+  stripH?: number;
   /** Optional shared inspiration word. Everyone gets the same one. */
   prompt: string | null;
   /** Finished sections, top to bottom. */
