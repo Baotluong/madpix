@@ -1,18 +1,25 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { colors } from '@/theme';
 
-SplashScreen.preventAutoHideAsync();
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar style="dark" />
+      <Stack
+        screenOptions={{
+          headerTintColor: colors.brandDark,
+          headerTitleStyle: { fontWeight: '700', color: colors.ink },
+          contentStyle: { backgroundColor: colors.bg },
+        }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="new" options={{ title: 'New game' }} />
+        <Stack.Screen name="play" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="reveal/[id]" options={{ title: 'The reveal' }} />
+        <Stack.Screen name="gallery" options={{ title: 'Gallery' }} />
+      </Stack>
+    </GestureHandlerRootView>
   );
 }
