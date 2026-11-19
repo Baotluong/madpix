@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { DieButton } from '@/components/die-button';
 import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
 import { startGame, useGameStore } from '@/game/store';
@@ -84,7 +85,7 @@ export default function NewDrawing() {
           {inspoOn && (
             <View style={styles.inspoRow}>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                style={[styles.input, { flex: 1, textAlign: 'center' }]}
                 value={prompt}
                 onChangeText={setPrompt}
                 maxLength={30}
@@ -92,7 +93,7 @@ export default function NewDrawing() {
                 placeholderTextColor={colors.muted}
                 autoCapitalize="none"
               />
-              <Button label="Reroll" variant="secondary" onPress={() => setPrompt(randomPrompt(prompt))} />
+              <DieButton label="Random inspo word" onPress={() => setPrompt(randomPrompt(prompt))} />
             </View>
           )}
           <Button label="Start drawing" onPress={start} style={{ marginTop: 12 }} />

@@ -1,6 +1,6 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 
+import { DieButton } from '@/components/die-button';
 import { randomArtistName } from '@/remote/names';
 import { colors } from '@/theme';
 
@@ -17,14 +17,7 @@ export function NameField({ value, onChange }: { value: string; onChange: (name:
         maxLength={20}
         selectTextOnFocus
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Random name"
-        hitSlop={6}
-        onPress={() => onChange(randomArtistName(value))}
-        style={({ pressed }) => [styles.die, pressed && { opacity: 0.6 }]}>
-        <Ionicons name="dice-outline" size={24} color={colors.brandDark} />
-      </Pressable>
+      <DieButton label="Random name" onPress={() => onChange(randomArtistName(value))} />
     </View>
   );
 }
@@ -40,13 +33,5 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: colors.ink,
-  },
-  die: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
   },
 });

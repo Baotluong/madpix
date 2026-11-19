@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { DieButton } from '@/components/die-button';
 import { NameField } from '@/components/name-field';
 import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
@@ -118,17 +119,23 @@ export default function Friends() {
                 trackColor={{ true: colors.brand, false: colors.line }}
                 thumbColor={colors.card}
               />
-              <Text style={styles.inspoLabel}>Inspo</Text>
+              <Text style={styles.inspoLabel}>Show inspo</Text>
               {inspoOn && (
                 <>
                   <TextInput
-                    style={[styles.input, { flex: 1 }]}
+                    style={[styles.input, styles.inspo]}
                     value={prompt}
                     onChangeText={setPrompt}
                     maxLength={30}
+                    placeholder="Type your own"
+                    placeholderTextColor={colors.muted}
                     autoCapitalize="none"
                   />
-                  <Button label="Reroll" variant="ghost" onPress={() => setPrompt(randomPrompt(prompt))} />
+                  <DieButton
+                    label="Random inspo word"
+                    background={colors.bg}
+                    onPress={() => setPrompt(randomPrompt(prompt))}
+                  />
                 </>
               )}
             </View>
@@ -147,7 +154,7 @@ export default function Friends() {
               placeholderTextColor={colors.line}
               autoCapitalize="none"
               autoCorrect={false}
-              maxLength={16}
+              maxLength={20}
               onSubmitEditing={join}
             />
             <Button
@@ -225,6 +232,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   code: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  inspo: { flex: 1, minWidth: 0, textAlign: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   inspoLabel: { fontSize: 15, color: colors.ink, fontWeight: '600' },
   segment: { flexDirection: 'row', gap: 6 },

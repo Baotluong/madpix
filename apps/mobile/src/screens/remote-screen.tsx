@@ -11,7 +11,7 @@ import { ShareImageButton } from '@/components/share-image-button';
 import type { Stroke } from '@/game/types';
 import type { DrawingView } from '@/remote/api';
 import { clearDraft, loadDraft, saveDraft } from '@/remote/drafts';
-import { shareInvite } from '@/remote/invite';
+import { INVITE_LABEL, shareInvite } from '@/remote/invite';
 import { saveRemoteToGallery } from '@/game/store';
 import { api, usePlayer } from '@/remote/session';
 import { toGame } from '@/remote/to-game';
@@ -197,7 +197,7 @@ function InviteCard(p: { code: string; openSpots: number; onShare: () => void; l
       <Text style={styles.inviteCode} selectable>
         {p.code}
       </Text>
-      <Button label="Share invite" variant={p.light ? 'secondary' : 'primary'} onPress={p.onShare} />
+      <Button label={INVITE_LABEL} variant={p.light ? 'secondary' : 'primary'} onPress={p.onShare} />
     </View>
   );
 }
