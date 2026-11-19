@@ -1,98 +1,68 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import Constants from 'expo-constants';
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Button } from '@/components/button';
+import { useGameStore } from '@/game/store';
+import { colors } from '@/theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+/** e.g. "0.1.0 · 095eb16", so you can tell which code is running. "+" means uncommitted changes. */
+const BUILD = [Constants.expoConfig?.version, Constants.expoConfig?.extra?.commit].filter(Boolean).join(' · ');
+
+export default function Home() {
+  const ready = useGameStore((s) => s.ready);
+  const current = useGameStore((s) => s.current);
+  const galleryCount = useGameStore((s) => s.gallery.length);
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+    <View style={styles.screen}>
+      <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.hero}>
+        <Text style={styles.title}>MadPix</Text>
+        <Image source={require('@/assets/images/elephant.png')} style={styles.elephant} contentFit="contain" />
+        <Text style={styles.tagline}>Fold the page. Draw your part. Unfold something mad.</Text>
       </SafeAreaView>
-    </ThemedView>
+
+      <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.actions}>
+        {ready && current && (
+          <Button
+            label={`Continue drawing (${current.artists[current.sections.length]}'s turn)`}
+            onPress={() => router.push('/play')}
+          />
+        )}
+        <Button
+          label="New drawing"
+          variant={current ? 'secondary' : 'primary'}
+          onPress={() => router.push('/new')}
+          disabled={!ready}
+        />
+        <Button
+          label={galleryCount ? `Gallery (${galleryCount})` : 'Gallery'}
+          variant="ghost"
+          onPress={() => router.push('/gallery')}
+        />
+        <Text style={styles.build}>{BUILD}</Text>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
+  screen: { flex: 1, flexDirection: 'row', backgroundColor: colors.bg },
+  hero: {
+    flex: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    gap: 12,
+    backgroundColor: colors.brand,
+    borderTopRightRadius: 32,
+    borderBottomRightRadius: 32,
+    paddingHorizontal: 24,
   },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  title: { fontSize: 52, fontWeight: '900', color: colors.card, fontStyle: 'italic', letterSpacing: -1 },
+  elephant: { width: 260, height: 120 },
+  tagline: { fontSize: 17, color: colors.card, textAlign: 'center', lineHeight: 24 },
+  actions: { flex: 2, justifyContent: 'center', padding: 24, gap: 12, maxWidth: 420 },
+  build: { position: 'absolute', right: 12, bottom: 8, fontSize: 11, color: colors.muted, opacity: 0.7 },
 });

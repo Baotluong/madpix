@@ -1,18 +1,33 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Stack } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { colors } from '@/theme';
 
-SplashScreen.preventAutoHideAsync();
+export default function RootLayout() {
+  // The whole app is landscape: strips are wide, so the phone stays sideways
+  // from setup to reveal. (app.json sets this too; the lock makes Expo Go follow it.)
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
+  }, []);
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar style="dark" />
+      <Stack
+        screenOptions={{
+          headerTintColor: colors.brandDark,
+          headerTitleStyle: { fontWeight: '700', color: colors.ink },
+          contentStyle: { backgroundColor: colors.bg },
+        }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="new" options={{ title: 'New drawing' }} />
+        <Stack.Screen name="play" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="reveal/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="gallery" options={{ title: 'Gallery' }} />
+      </Stack>
+    </GestureHandlerRootView>
   );
 }
