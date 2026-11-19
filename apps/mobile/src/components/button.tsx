@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 20,
     borderRadius: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -46,5 +46,5 @@ const styles = StyleSheet.create({
   secondary: { backgroundColor: colors.card, borderWidth: 2, borderColor: colors.brandDark },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: 17, fontWeight: '700', color: colors.card },
-  sub: { fontSize: 13, fontWeight: '500', marginTop: 1, opacity: 0.9, textAlign: 'center' },
+  sub: { fontSize: 11, fontWeight: '500', opacity: 0.75, textAlign: 'center' },
 });

@@ -48,19 +48,13 @@ export default function Home() {
 
       <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.actions}>
         <Button
-          label="Send around"
-          sublabel={
-            needsMe ? `Online · ${needsMe} waiting on you` : 'Online · everyone draws on their own phone'
-          }
+          label={needsMe ? `Send around (${needsMe} waiting on you)` : 'Send around'}
+          sublabel="Online"
           onPress={() => router.push('/friends')}
         />
         <Button
-          label="Pass around"
-          sublabel={
-            ready && current
-              ? `Same device · ${current.artists[current.sections.length]}'s turn`
-              : 'Same device · take turns on this one'
-          }
+          label={ready && current ? 'Pass around (1 in progress)' : 'Pass around'}
+          sublabel="Same device"
           variant="secondary"
           onPress={() => router.push('/new')}
           disabled={!ready}
