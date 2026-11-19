@@ -1,11 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Redirect, router } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { canvasHeight, DrawingCanvas } from '@/drawing/drawing-canvas';
@@ -20,7 +21,9 @@ import { colors, PALETTE, SIZES } from '@/theme';
 
 const PANEL_PAD = 8;
 const PANEL_W = PANEL_CONTENT_W + PANEL_PAD * 2;
-const MARGIN = 8;
+const RAIL_W = 52;
+/** Breathing room between the paper and the edge of the desk. */
+const MARGIN = 6;
 const INSPO_MS = 2500;
 
 export default function PlayScreen() {
@@ -83,8 +86,6 @@ function Drawing({ game }: { game: Game }) {
   const isLast = turn === game.artists.length - 1;
   const unitsH = stripHeight(game);
   const { width: W, height: H } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const landscape = W > H;
 
   const [strokes, setStrokes] = useState<Stroke[]>(game.draft);
   const [past, setPast] = useState<Stroke[][]>([]);
@@ -93,6 +94,10 @@ function Drawing({ game }: { game: Game }) {
   const [color, setColor] = useState(PALETTE[0]);
   const [sizeIndex, setSizeIndex] = useState(1);
   const [overview, setOverview] = useState(false);
+  // Tools fold into a slim rail so the paper can take (almost) the whole screen.
+  const [collapsed, setCollapsed] = useState(false);
+  // The space left for the paper, measured rather than computed from insets.
+  const [area, setArea] = useState<{ w: number; h: number } | null>(null);
   // The inspo word pops up when drawing starts, then hides; the bulb brings it back.
   const [showInspo, setShowInspo] = useState(!!game.prompt);
   useEffect(() => {
@@ -101,15 +106,11 @@ function Drawing({ game }: { game: Game }) {
     return () => clearTimeout(t);
   }, [showInspo]);
 
-  // Make the strip (plus the sliver) as big as the screen allows next to the tools.
+  // Make the strip (plus the sliver) as big as the paper area allows.
   const hasSliver = turn > 0;
-  const availW = landscape
-    ? W - insets.left - insets.right - PANEL_W - MARGIN * 2
-    : W - insets.left - insets.right - MARGIN * 2;
-  const availH = landscape
-    ? H - insets.top - insets.bottom - MARGIN * 2
-    : H - insets.top - insets.bottom - 260;
-  const stripWidth = Math.floor(Math.min(availW, availH / canvasHeight(1, unitsH, hasSliver)));
+  const stripWidth = area
+    ? Math.floor(Math.min(area.w - MARGIN * 2, (area.h - MARGIN * 2) / canvasHeight(1, unitsH, hasSliver)))
+    : 0;
 
   const commit = (next: Stroke[]) => {
     setPast((p) => [...p, strokes]);
@@ -157,56 +158,97 @@ function Drawing({ game }: { game: Game }) {
   const pageAspect = (unitsH / STRIP_W) * game.artists.length;
   const overviewWidth = Math.min(W - 48, 420, (H - 100) / pageAspect);
 
-  return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
-      <View style={[styles.body, landscape && styles.bodyLandscape]}>
-        <View style={styles.paperArea}>
-          <View>
-            <DrawingCanvas
-              width={stripWidth}
-              unitsH={unitsH}
-              strokes={strokes}
-              prevStrokes={hasSliver ? game.sections[turn - 1].strokes : undefined}
-              showNextHint={!isLast}
-              color={tool === 'eraser' ? colors.paper : color}
-              penWidth={tool === 'eraser' ? SIZES[sizeIndex] * 2 : SIZES[sizeIndex]}
-              onStroke={(s) => commit([...strokes, s])}
-            />
-            {showInspo && game.prompt && (
-              <Animated.View
-                entering={FadeIn.duration(200)}
-                exiting={FadeOut.duration(400)}
-                pointerEvents="none"
-                style={styles.inspoBubble}>
-                <Text style={styles.inspoBubbleText}>
-                  Inspo: <Text style={{ fontWeight: '800' }}>{game.prompt}</Text>
-                </Text>
-              </Animated.View>
-            )}
-          </View>
-        </View>
+  const inspoButton = game.prompt && (
+    <IconButton plain size={34} label="Show inspo word" onPress={() => setShowInspo(true)}>
+      <Ionicons name="bulb-outline" size={22} color={colors.brandDark} />
+    </IconButton>
+  );
+  const eyeButton = (
+    <IconButton plain size={34} label="See the whole page" onPress={() => setOverview(true)}>
+      <Ionicons name="eye-outline" size={23} color={colors.brandDark} />
+    </IconButton>
+  );
 
-        <View style={[styles.panel, !landscape && styles.panelPortrait]}>
+  return (
+    <View style={styles.screen}>
+      <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.paperArea}>
+        <View
+          style={styles.paperFit}
+          onLayout={(e) => {
+            const { width: w, height: h } = e.nativeEvent.layout;
+            setArea((a) => (a && a.w === w && a.h === h ? a : { w, h }));
+          }}>
+          {stripWidth > 0 && (
+            <View>
+              <DrawingCanvas
+                width={stripWidth}
+                unitsH={unitsH}
+                strokes={strokes}
+                prevStrokes={hasSliver ? game.sections[turn - 1].strokes : undefined}
+                showNextHint={!isLast}
+                color={tool === 'eraser' ? colors.paper : color}
+                penWidth={tool === 'eraser' ? SIZES[sizeIndex] * 2 : SIZES[sizeIndex]}
+                onStroke={(s) => commit([...strokes, s])}
+              />
+              {showInspo && game.prompt && (
+                <Animated.View
+                  entering={FadeIn.duration(200)}
+                  exiting={FadeOut.duration(400)}
+                  pointerEvents="none"
+                  style={styles.inspoBubble}>
+                  <Text style={styles.inspoBubbleText}>
+                    Inspo: <Text style={{ fontWeight: '800' }}>{game.prompt}</Text>
+                  </Text>
+                </Animated.View>
+              )}
+            </View>
+          )}
+        </View>
+      </SafeAreaView>
+
+      {collapsed ? (
+        <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.rail}>
+          <IconButton plain size={34} label="Show tools" onPress={() => setCollapsed(false)}>
+            <Ionicons name="chevron-back" size={24} color={colors.ink} />
+          </IconButton>
+          <IconButton size={34} label="Show tools" onPress={() => setCollapsed(false)}>
+            {tool === 'eraser' ? (
+              <MaterialCommunityIcons name="eraser" size={19} color={colors.ink} />
+            ) : (
+              <View style={[styles.railSwatch, { backgroundColor: color }]} />
+            )}
+          </IconButton>
+          <IconButton plain size={34} label="Undo" disabled={past.length === 0} onPress={undo}>
+            <Ionicons name="arrow-undo" size={20} color={colors.ink} />
+          </IconButton>
+          {inspoButton}
+          {eyeButton}
+          <View style={{ flex: 1 }} />
+          <IconButton size={44} label="Done" selected onPress={done}>
+            <Ionicons name="checkmark" size={26} color={colors.card} />
+          </IconButton>
+        </SafeAreaView>
+      ) : (
+        <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.panel}>
           <View style={styles.panelTop}>
-            <Text style={styles.artist} numberOfLines={1}>
-              {artist}
-            </Text>
+            <View style={styles.artistRow}>
+              <Text style={styles.artist} numberOfLines={1}>
+                {artist}
+              </Text>
+              <IconButton plain size={34} label="Hide tools" onPress={() => setCollapsed(true)}>
+                <Ionicons name="chevron-forward" size={24} color={colors.ink} />
+              </IconButton>
+            </View>
             <View style={styles.controls}>
-              <IconButton plain label="Quit" onPress={quit}>
+              <IconButton plain size={34} label="Quit" onPress={quit}>
                 <Ionicons name="close" size={24} color={colors.muted} />
               </IconButton>
-              {game.prompt && (
-                <IconButton plain label="Show inspo word" onPress={() => setShowInspo(true)}>
-                  <Ionicons name="bulb-outline" size={22} color={colors.brandDark} />
-                </IconButton>
-              )}
-              <IconButton plain label="See the whole page" onPress={() => setOverview(true)}>
-                <Ionicons name="eye-outline" size={23} color={colors.brandDark} />
-              </IconButton>
+              {inspoButton}
+              {eyeButton}
             </View>
           </View>
           <Toolbar
-            vertical={landscape}
+            vertical
             tool={tool}
             color={color}
             sizeIndex={sizeIndex}
@@ -220,8 +262,8 @@ function Drawing({ game }: { game: Game }) {
             onClear={() => commit([])}
           />
           <Button label="Done" onPress={done} style={styles.done} />
-        </View>
-      </View>
+        </SafeAreaView>
+      )}
 
       <Modal
         visible={overview}
@@ -236,12 +278,11 @@ function Drawing({ game }: { game: Game }) {
           </ScrollView>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
   handoff: { flex: 1, backgroundColor: colors.brand },
   handoffContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   handoffStep: { fontSize: 15, fontWeight: '700', color: colors.card, opacity: 0.85 },
@@ -256,9 +297,9 @@ const styles = StyleSheet.create({
   },
   inspoLabel: { fontSize: 13, color: colors.muted },
   inspoWord: { fontSize: 24, fontWeight: '800', color: colors.ink },
-  body: { flex: 1, padding: MARGIN, gap: MARGIN },
-  bodyLandscape: { flexDirection: 'row', paddingRight: 0 },
-  paperArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  screen: { flex: 1, flexDirection: 'row', backgroundColor: colors.desk },
+  paperArea: { flex: 1 },
+  paperFit: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   inspoBubble: {
     position: 'absolute',
     // At the bottom so it never hides the sliver at the top.
@@ -273,14 +314,24 @@ const styles = StyleSheet.create({
   panel: {
     width: PANEL_W,
     paddingHorizontal: PANEL_PAD,
+    paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: colors.bg,
   },
-  panelPortrait: { width: '100%', maxWidth: 560, alignSelf: 'center', gap: 6 },
   panelTop: { alignSelf: 'stretch', gap: 2 },
-  artist: { fontSize: 16, fontWeight: '800', color: colors.ink, textAlign: 'center' },
+  artistRow: { flexDirection: 'row', alignItems: 'center' },
+  artist: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.ink, paddingLeft: 4 },
   controls: { flexDirection: 'row', justifyContent: 'space-between' },
   done: { alignSelf: 'stretch', minHeight: 44 },
+  rail: {
+    width: RAIL_W,
+    paddingVertical: 8,
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.bg,
+  },
+  railSwatch: { width: 20, height: 20, borderRadius: 10 },
   backdrop: { flex: 1, backgroundColor: 'rgba(31,36,48,0.75)' },
   overviewContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 16, gap: 10 },
   overviewHint: { color: colors.card, opacity: 0.8 },

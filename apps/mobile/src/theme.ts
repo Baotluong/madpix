@@ -9,6 +9,8 @@ export const colors = {
   /** The back of a folded-over section. */
   folded: '#DCE3F0',
   line: '#D5DAE3',
+  /** The table the paper lies on while drawing. Dark enough that the paper stands out. */
+  desk: '#454C5C',
   danger: '#C62828',
 };
 
