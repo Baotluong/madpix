@@ -37,6 +37,12 @@
     },
     "ios": {
       "bundleIdentifier": "com.madpixdev.madpix"
+    },
+    "owner": "madpixdev",
+    "extra": {
+      "eas": {
+        "projectId": "bdf1bb8a-b622-496c-b9f9-6bf1c3b453b3"
+      }
     }
   }
 }
