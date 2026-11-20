@@ -1,4 +1,4 @@
-const { withGradleProperties, withProjectBuildGradle } = require('expo/config-plugins');
+const { withAndroidManifest, withGradleProperties, withProjectBuildGradle } = require('expo/config-plugins');
 
 /**
  * Gradle settings for release builds, so they fit Expo's free build machines (the Gradle daemon
@@ -37,7 +37,21 @@ subprojects { p ->
 }
 `;
 
+/**
+ * The app is locked to landscape, and from that Google Play infers a *required* landscape screen,
+ * hiding the app from devices that don't report one (some Chromebooks, PCs, XR headsets). Declaring
+ * the feature as optional keeps the lock but lets Play offer the app everywhere.
+ */
+const LANDSCAPE = 'android.hardware.screen.landscape';
+
 module.exports = function withAndroidBuildSettings(config) {
+  config = withAndroidManifest(config, (cfg) => {
+    const manifest = cfg.modResults.manifest;
+    const features = (manifest['uses-feature'] ?? []).filter((f) => f.$['android:name'] !== LANDSCAPE);
+    features.push({ $: { 'android:name': LANDSCAPE, 'android:required': 'false' } });
+    manifest['uses-feature'] = features;
+    return cfg;
+  });
   config = withProjectBuildGradle(config, (cfg) => {
     if (!cfg.modResults.contents.includes(MARK)) cfg.modResults.contents += CAP_NATIVE_JOBS;
     return cfg;
