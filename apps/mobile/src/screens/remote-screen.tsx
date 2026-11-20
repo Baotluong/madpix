@@ -170,15 +170,18 @@ export default function RemoteScreen() {
             ? `Spot ${view.turn + 1} is open. Send the code to a friend; they start as soon as they join.`
             : "We'll pick it up here when it changes. You can leave and come back."}
         </Text>
-        <View style={styles.artists}>
-          {view.artists.map((a) => (
-            <Text key={a.position} style={[styles.artist, a.position === view.turn && styles.artistNow]}>
-              {a.done ? '✓' : a.position === view.turn ? '✎' : '·'} {a.position + 1}.{' '}
-              {a.isMe ? `${a.name} (you)` : (a.name ?? 'Open spot')}
-            </Text>
-          ))}
+        {/* Side by side, so the page fits a landscape phone without scrolling. */}
+        <View style={styles.waitRow}>
+          <View style={styles.artists}>
+            {view.artists.map((a) => (
+              <Text key={a.position} style={[styles.artist, a.position === view.turn && styles.artistNow]}>
+                {a.done ? '✓' : a.position === view.turn ? '✎' : '·'} {a.position + 1}.{' '}
+                {a.isMe ? `${a.name} (you)` : (a.name ?? 'Open spot')}
+              </Text>
+            ))}
+          </View>
+          {code && invite && <InviteCard code={code} openSpots={openSpots} onShare={invite} />}
         </View>
-        {code && invite && <InviteCard code={code} openSpots={openSpots} onShare={invite} />}
         <View style={styles.row}>
           <Button label="Back" variant="ghost" onPress={() => router.back()} />
           <Button label="Refresh" variant="ghost" onPress={load} />
@@ -194,7 +197,8 @@ function InviteCard(p: { code: string; openSpots: number; onShare: () => void; l
       <Text style={styles.inviteLabel}>
         {p.openSpots} open {p.openSpots === 1 ? 'spot' : 'spots'}. Invite with code
       </Text>
-      <Text style={styles.inviteCode} selectable>
+      {/* Full width, one line: Android measured the heavy code text short and wrapped its last digit. */}
+      <Text style={styles.inviteCode} numberOfLines={1}>
         {p.code}
       </Text>
       <Button label={INVITE_LABEL} variant={p.light ? 'secondary' : 'primary'} onPress={p.onShare} />
@@ -215,8 +219,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    padding: 24,
+    gap: 10,
+    padding: 16,
   },
   title: {
     fontSize: 24,
@@ -230,6 +234,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 520,
     lineHeight: 22,
+  },
+  waitRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 28,
   },
   artists: { gap: 2 },
   artist: { fontSize: 16, color: colors.muted },
@@ -245,9 +256,10 @@ const styles = StyleSheet.create({
   },
   inviteLabel: { fontSize: 13, color: colors.muted },
   inviteCode: {
+    alignSelf: 'stretch',
+    textAlign: 'center',
     fontSize: 30,
     fontWeight: '900',
-    letterSpacing: 1,
     color: colors.ink,
   },
   lightGhost: { opacity: 0.9 },
