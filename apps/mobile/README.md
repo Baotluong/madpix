@@ -28,6 +28,18 @@ echo "EXPO_PUBLIC_API_URL=local" > .env.local   # git ignores it
 npx expo start --clear                         # phone and Mac on the same Wi-Fi
 ```
 
+## Web version
+
+The web build is live at https://madpix.pages.dev, hosted free on Cloudflare Pages. To update it:
+
+```bash
+npx wrangler login     # once per computer
+npm run deploy:web     # builds dist/ against the Fly API, then uploads it
+```
+
+The deploy always points at the Fly API, even if `.env.local` says `local`. Cloudflare serves
+`index.html` for any path it doesn't have a file for, so links like `/join/goose14` open the app.
+
 ## How it's built
 
 | Path | What |

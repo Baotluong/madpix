@@ -6,7 +6,7 @@ permalink: /privacy/
 
 # Privacy policy
 
-*Last updated: November 19, 2026*
+*Last updated: November 20, 2026*
 
 MadPix has no accounts. You don't give us an email address, phone number or password, and we
 don't use ads, analytics or tracking. This page explains the little we do keep.
@@ -14,7 +14,8 @@ don't use ads, analytics or tracking. This page explains the little we do keep.
 ## Pass around (one device)
 
 Drawings made in **Pass around** never leave your device. They're saved on the device in the
-app's gallery, and deleting the app deletes them.
+app's gallery, and deleting the app deletes them. On the web version, they're saved in your
+browser, and clearing the site's data deletes them.
 
 ## Send around (online)
 
@@ -36,10 +37,12 @@ disk.
 
 ## Who else gets data
 
-We don't sell or share your data. Two services help run MadPix:
+We don't sell or share your data. Three services help run MadPix:
 
 - **Fly.io** hosts our server and its database, in the United States.
 - **Expo** delivers push notifications to your device.
+- **Cloudflare** hosts the web version at madpix.pages.dev. It sees your IP address when it
+  sends you the pages.
 
 ## How long we keep it
 
