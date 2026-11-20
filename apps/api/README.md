@@ -88,8 +88,9 @@ fly volumes create madpix_data --size 1 --region iad
 fly deploy --ha=false
 ```
 
-After that, `fly deploy` from this folder. The machine stops when idle, so the first request
-after a quiet spell waits about 15 seconds while it boots.
+After that, `fly deploy` from this folder. The machine suspends when idle and resumes from a
+memory snapshot in about a second. Right after a deploy, or if Fly moves the machine, it boots
+from scratch instead, and that first request waits about 15 seconds.
 
 SQLite allows one writer, so the app runs on a single machine with one database
 connection. That also makes joining and folding strictly one-at-a-time.
