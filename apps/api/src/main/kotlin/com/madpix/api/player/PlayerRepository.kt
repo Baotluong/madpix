@@ -52,5 +52,27 @@ class PlayerRepository(private val jdbc: JdbcClient) {
             .update()
     }
 
+    /**
+     * "Delete my data": forgets the name, push token and login. The row itself stays, so strips
+     * this player already folded keep their place in friends' drawings, as "Deleted artist".
+     */
+    fun anonymize(id: String, now: Instant) {
+        jdbc.sql(
+            """
+            UPDATE players
+            SET name = :name, push_token = NULL, token_hash = :tokenHash, deleted_at = :now
+            WHERE id = :id
+            """,
+        )
+            .param("id", id)
+            .param("name", DELETED_NAME)
+            // Not a SHA-256 hex string, so no token can ever match it again.
+            .param("tokenHash", "deleted:$id")
+            .param("now", now.toString())
+            .update()
+    }
+
     private fun ResultSet.toPlayer() = Player(getString("id"), getString("name"), getString("push_token"))
 }
+
+const val DELETED_NAME = "Deleted artist"

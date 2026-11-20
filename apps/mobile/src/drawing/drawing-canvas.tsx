@@ -60,9 +60,10 @@ export function DrawingCanvas(p: Props) {
   // Dragging off the paper keeps the stroke going, but points stay just past the
   // edges: that ink is clipped anyway, and the server rejects far-off points.
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  // A tenth of a unit is far finer than a finger, and keeps strips small to store and send.
   const toUnits = (x: number, y: number) => [
-    clamp(x / scale, -EDGE, STRIP_W + EDGE),
-    clamp((y - sliverPx) / scale, -unitsH * SLIVER - EDGE, unitsH + EDGE),
+    round1(clamp(x / scale, -EDGE, STRIP_W + EDGE)),
+    round1(clamp((y - sliverPx) / scale, -unitsH * SLIVER - EDGE, unitsH + EDGE)),
   ];
 
   const pan = usePanGesture({
@@ -141,3 +142,5 @@ export function DrawingCanvas(p: Props) {
 const styles = StyleSheet.create({
   hint: { position: 'absolute', right: 6, fontSize: 10, color: colors.brand, opacity: 0.6 },
 });
+
+const round1 = (v: number) => Math.round(v * 10) / 10;

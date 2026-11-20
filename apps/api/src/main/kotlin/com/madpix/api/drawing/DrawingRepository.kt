@@ -108,6 +108,60 @@ class DrawingRepository(private val jdbc: JdbcClient) {
             .update()
     }
 
+    /** Unfinished drawings the player has a spot in. */
+    fun countOpenForPlayer(playerId: String): Int =
+        jdbc.sql(
+            """
+            SELECT COUNT(*) FROM seats s JOIN drawings d ON d.id = s.drawing_id
+            WHERE s.player_id = ? AND d.finished_at IS NULL
+            """,
+        )
+            .param(playerId)
+            .query(Int::class.java).single()
+
+    fun findOpenForPlayer(playerId: String): List<DrawingRow> =
+        jdbc.sql(
+            """
+            SELECT d.* FROM drawings d JOIN seats s ON s.drawing_id = d.id
+            WHERE s.player_id = ? AND d.finished_at IS NULL
+            """,
+        )
+            .param(playerId)
+            .query { rs, _ -> rs.toDrawing() }.list()
+
+    fun delete(drawingId: String) {
+        jdbc.sql("DELETE FROM drawings WHERE id = ?").param(drawingId).update()
+    }
+
+    fun deleteSeat(drawingId: String, position: Int) {
+        jdbc.sql("DELETE FROM seats WHERE drawing_id = ? AND position = ?").params(drawingId, position).update()
+    }
+
+    fun moveSeat(drawingId: String, from: Int, to: Int) {
+        jdbc.sql("UPDATE seats SET position = ? WHERE drawing_id = ? AND position = ?")
+            .params(to, drawingId, from)
+            .update()
+    }
+
+    fun setInviteCode(drawingId: String, code: String) {
+        jdbc.sql("UPDATE drawings SET invite_code = ? WHERE id = ?").params(code, drawingId).update()
+    }
+
+    /** Records a report. Reporting the same drawing again changes nothing. */
+    fun insertReport(drawingId: String, reporterId: String, reason: String?, now: Instant) {
+        jdbc.sql(
+            """
+            INSERT OR IGNORE INTO reports (drawing_id, reporter_id, reason, created_at)
+            VALUES (:drawingId, :reporterId, :reason, :now)
+            """,
+        )
+            .param("drawingId", drawingId)
+            .param("reporterId", reporterId)
+            .param("reason", reason)
+            .param("now", now.toString())
+            .update()
+    }
+
     fun clearInviteCode(drawingId: String) {
         jdbc.sql("UPDATE drawings SET invite_code = NULL WHERE id = ?").param(drawingId).update()
     }

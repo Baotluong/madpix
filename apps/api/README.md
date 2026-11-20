@@ -32,13 +32,23 @@ never reaches their phone.
 |---|---|---|
 | `POST` | `/players` | New anonymous player → `{ player, token }` |
 | `GET` / `PATCH` | `/players/me` | Read, or change name / Expo push token |
+| `DELETE` | `/players/me` | "Delete my data": leave unfinished drawings, wipe name, push token and login |
 | `POST` | `/drawings` | Start a drawing (`artistCount` 2–4, optional `prompt`) |
 | `GET` | `/drawings` | My drawings, most recent first |
 | `GET` | `/drawings/{id}` | One drawing, as I'm allowed to see it |
 | `POST` | `/drawings/join` | Join with `{ code }` |
 | `POST` | `/drawings/{id}/strip` | Fold my strip: `{ strokes }` |
+| `POST` | `/drawings/{id}/report` | Flag a drawing I'm in (`{ reason }` optional); logged as a warning |
 | `GET` | `/invites/{code}` | Peek at a drawing before joining |
 | `GET` | `/healthz` | Health check |
+
+### Abuse limits
+
+- Requests per client address (`Fly-Client-IP`): 20 new players an hour, 30 invite lookups or
+  joins a minute, 60 other writes a minute, 300 reads a minute. Over that: `429` with `Retry-After`.
+- Bodies over 5 MB get `413`; chunked bodies (no length) get `411`.
+- A player can be in at most 20 unfinished drawings.
+- Reports show up in `fly logs` as `Drawing reported: ...`.
 
 Errors are RFC 9457 problem details, e.g. `{"status": 409, "detail": "It's not your turn"}`.
 
@@ -46,6 +56,7 @@ Errors are RFC 9457 problem details, e.g. `{"status": 409, "detail": "It's not y
 
 | Path | What |
 |---|---|
+| `common/` | Errors, CORS, and `AbuseFilter` (rate limits, body size) |
 | `player/` | Anonymous players, token auth (`@CurrentPlayer`) |
 | `drawing/` | Rules (`DrawingService`), SQL (`DrawingRepository`), sliver cutting, validation |
 | `push/` | Expo push sender; notifications go out after the transaction commits |

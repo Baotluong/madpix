@@ -4,6 +4,8 @@ import com.madpix.api.common.badRequest
 import com.madpix.api.common.conflict
 import com.madpix.api.common.notFound
 import com.madpix.api.player.Player
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -29,6 +31,7 @@ class DrawingService(
         if (artistCount !in Geometry.MIN_ARTISTS..Geometry.MAX_ARTISTS) {
             badRequest("Artists must be ${Geometry.MIN_ARTISTS} to ${Geometry.MAX_ARTISTS}")
         }
+        checkOpenDrawings(me)
         val now = clock.instant()
         val row = DrawingRow(
             id = UUID.randomUUID().toString(),
@@ -66,6 +69,7 @@ class DrawingService(
         if (seats.any { it.playerId == me.id }) return view(d, seats, me)
         if (d.finishedAt != null) conflict("This drawing is already finished")
         if (seats.size >= d.artistCount) conflict("This drawing is full")
+        checkOpenDrawings(me)
         drawings.insertSeat(d.id, seats.size, me.id, clock.instant())
         // The last spot is taken: free the code for another drawing.
         val full = seats.size + 1 == d.artistCount
@@ -111,6 +115,52 @@ class DrawingService(
             }
         }
         return get(me, id)
+    }
+
+    /** Flags a drawing for a look. Only its artists can see it, so only they can report it. */
+    @Transactional
+    fun report(me: Player, id: String, reason: String?) {
+        get(me, id)
+        drawings.insertReport(id, me.id, reason?.trim()?.ifEmpty { null }, clock.instant())
+        log.warn("Drawing reported: drawing={} reporter={} reason={}", id, me.id, reason)
+    }
+
+    /**
+     * For "Delete my data": gives up every spot I haven't drawn in yet. Drawings with only me in
+     * them go away. In others, the artists after me move up a spot, the invite code comes back if
+     * the drawing was full, and whoever's turn it becomes gets told. Strips I already folded stay.
+     */
+    @Transactional
+    fun leaveUnfinished(me: Player) {
+        for (d in drawings.findOpenForPlayer(me.id)) {
+            val seats = drawings.seats(d.id)
+            val mine = seats.first { it.playerId == me.id }
+            if (mine.submittedAt != null) continue
+            if (seats.size == 1) {
+                drawings.delete(d.id)
+                continue
+            }
+            val turn = seats.count { it.submittedAt != null }
+            val hadTurn = seats.find { it.position == turn }?.playerId
+            drawings.deleteSeat(d.id, mine.position)
+            // Everyone after me hasn't folded yet (turns go in order), so moving them up is safe.
+            seats.filter { it.position > mine.position }.sortedBy { it.position }.forEach {
+                drawings.moveSeat(d.id, it.position, it.position - 1)
+            }
+            if (d.inviteCode == null) drawings.setInviteCode(d.id, newInviteCode())
+            val after = drawings.seats(d.id)
+            val hasTurn = after.find { it.position == turn }
+            if (hasTurn != null && hasTurn.playerId != hadTurn) {
+                val previous = after.find { it.position == turn - 1 }?.playerName
+                events.publishEvent(TurnStarted(d.id, hasTurn.playerId, previous))
+            }
+        }
+    }
+
+    private fun checkOpenDrawings(me: Player) {
+        if (drawings.countOpenForPlayer(me.id) >= MAX_OPEN_DRAWINGS) {
+            conflict("You're in $MAX_OPEN_DRAWINGS unfinished drawings already. Finish a few first!")
+        }
     }
 
     private fun view(d: DrawingRow, seats: List<SeatRow>, me: Player, withStrokes: Boolean = true): DrawingView {
@@ -162,6 +212,10 @@ class DrawingService(
     }
 
     private companion object {
+        val log: Logger = LoggerFactory.getLogger(DrawingService::class.java)
+
+        /** Keeps one player (or script) from holding spots in endless drawings. */
+        const val MAX_OPEN_DRAWINGS = 20
         const val NO_CODE = "No open drawing with that code. Check the spelling, or it may be full already."
     }
 }

@@ -27,6 +27,8 @@ class DrawingController(private val service: DrawingService) {
 
     data class StripRequest(val strokes: List<Stroke>)
 
+    data class ReportRequest(@field:Size(max = 200) val reason: String? = null)
+
     @PostMapping("/drawings")
     @ResponseStatus(HttpStatus.CREATED)
     fun create(@CurrentPlayer me: Player, @Valid @RequestBody body: NewDrawing) =
@@ -44,6 +46,11 @@ class DrawingController(private val service: DrawingService) {
     @PostMapping("/drawings/{id}/strip")
     fun submitStrip(@CurrentPlayer me: Player, @PathVariable id: String, @RequestBody body: StripRequest) =
         service.submitStrip(me, id, body.strokes)
+
+    @PostMapping("/drawings/{id}/report")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun report(@CurrentPlayer me: Player, @PathVariable id: String, @Valid @RequestBody body: ReportRequest?) =
+        service.report(me, id, body?.reason)
 
     /** A peek at a drawing before joining it: who's in and how many spots are left. */
     @GetMapping("/invites/{code}")

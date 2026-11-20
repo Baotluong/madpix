@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
-import { ApiError, request, type DrawingView, type InviteView, type PlayerView } from './api';
+import { ApiError, request, type DrawingView, type InviteView, type Method, type PlayerView } from './api';
 import type { Stroke } from '@/game/types';
 
 /**
@@ -66,7 +66,7 @@ export async function setPlayerName(name: string): Promise<PlayerView> {
 }
 
 /** A request as this device's player. A rejected token means the API forgot us: start fresh. */
-async function authed<T>(method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<T> {
+async function authed<T>(method: Method, path: string, body?: unknown): Promise<T> {
   const token = state.session?.token;
   if (!token) throw new ApiError(401, 'Pick a name first');
   try {
@@ -86,4 +86,14 @@ export const api = {
   submitStrip: (id: string, strokes: Stroke[]) =>
     authed<DrawingView>('POST', `/drawings/${id}/strip`, { strokes }),
   invite: (code: string) => request<InviteView>('GET', `/invites/${encodeURIComponent(code.trim())}`),
+  report: (id: string, reason?: string) => authed<null>('POST', `/drawings/${id}/report`, { reason }),
 };
+
+/**
+ * "Delete my online data": the server drops this player's name and open spots, then this device
+ * forgets the login. Drawings saved in the gallery stay on the device.
+ */
+export async function deleteMyData() {
+  await authed<null>('DELETE', '/players/me');
+  await save(null);
+}

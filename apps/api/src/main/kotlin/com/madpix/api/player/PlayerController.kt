@@ -1,9 +1,12 @@
 package com.madpix.api.player
 
+import com.madpix.api.drawing.DrawingService
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import org.springframework.http.HttpStatus
+import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -16,7 +19,11 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/players")
-class PlayerController(private val players: PlayerRepository, private val clock: Clock) {
+class PlayerController(
+    private val players: PlayerRepository,
+    private val drawings: DrawingService,
+    private val clock: Clock,
+) {
 
     data class NewPlayer(
         @field:NotBlank @field:Size(max = 20) val name: String,
@@ -46,6 +53,18 @@ class PlayerController(private val players: PlayerRepository, private val clock:
 
     @GetMapping("/me")
     fun me(@CurrentPlayer me: Player) = PlayerView(me)
+
+    /**
+     * "Delete my data". Leaves every drawing I haven't drawn in yet, then wipes my name, push
+     * token and login. Strips I already folded stay in friends' drawings as "Deleted artist".
+     */
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    fun delete(@CurrentPlayer me: Player) {
+        drawings.leaveUnfinished(me)
+        players.anonymize(me.id, clock.instant())
+    }
 
     @PatchMapping("/me")
     fun update(@CurrentPlayer me: Player, @Valid @RequestBody body: PlayerUpdate): PlayerView {

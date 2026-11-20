@@ -9,6 +9,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpMethod.DELETE
 import org.springframework.http.HttpMethod.GET
 import org.springframework.http.HttpMethod.PATCH
 import org.springframework.http.HttpMethod.POST
@@ -42,6 +43,8 @@ class DrawingFlowTest(
             val file = Files.createTempFile("madpix-test", ".db")
             Files.delete(file)
             registry.add("madpix.db-path") { file.toString() }
+            // These tests make lots of players from one address; AbuseFilterTest covers the limits.
+            registry.add("madpix.rate-limit.enabled") { "false" }
         }
     }
 
@@ -157,6 +160,74 @@ class DrawingFlowTest(
         call(a, POST, "/drawings/$id/strip", mapOf("strokes" to listOf(badColor)))
             .andExpect { status { isBadRequest() } }
         call(a, POST, "/drawings", mapOf("artistCount" to 9)).andExpect { status { isBadRequest() } }
+    }
+
+    @Test
+    fun `deleting my data gives up my open spots, keeps my folded strips, and logs me out`() {
+        val a = newPlayer("A", push = "ExponentPushToken[a]")
+        val b = newPlayer("B")
+        val c = newPlayer("C", push = "ExponentPushToken[c]")
+
+        // B is alone in one drawing...
+        val solo = call(b, POST, "/drawings", mapOf("artistCount" to 2)).json()
+        // ...is next up in a full one (A folded, B's turn, then C)...
+        val d = call(a, POST, "/drawings", mapOf("artistCount" to 3)).json()
+        val id = d["id"].asString()
+        call(b, POST, "/drawings/join", mapOf("code" to d["inviteCode"].asString()))
+        call(c, POST, "/drawings/join", mapOf("code" to d["inviteCode"].asString()))
+        call(a, POST, "/drawings/$id/strip", mapOf("strokes" to emptyList<Any>()))
+        // ...and has already folded their strip in a finished one with A.
+        val done = call(b, POST, "/drawings", mapOf("artistCount" to 2)).json()
+        val doneId = done["id"].asString()
+        call(b, POST, "/drawings/$doneId/strip", mapOf("strokes" to emptyList<Any>()))
+        call(a, POST, "/drawings/join", mapOf("code" to done["inviteCode"].asString()))
+        call(a, POST, "/drawings/$doneId/strip", mapOf("strokes" to emptyList<Any>()))
+        pushes.sent.clear()
+
+        call(b, DELETE, "/players/me").andExpect { status { isNoContent() } }
+
+        // B's token is dead, and the drawing only B was in is gone.
+        call(b, GET, "/players/me").andExpect { status { isUnauthorized() } }
+        call(null, GET, "/invites/${solo["inviteCode"].asString()}").andExpect { status { isNotFound() } }
+
+        // C moved up into B's spot, so it's C's turn now, and C hears about it.
+        val forC = call(c, GET, "/drawings/$id").json()
+        assertTrue(forC["myTurn"].asBoolean())
+        assertEquals(1, forC["myPosition"].asInt())
+        val names = forC["artists"].let { arr -> (0 until arr.size()).map { arr[it]["name"] } }
+        assertEquals(listOf("A", "C", null), names.map { if (it.isNull) null else it.asString() })
+        assertFalse(forC["inviteCode"].isNull, "a spot opened up, so the drawing has a code again")
+        awaitPushes(1)
+        assertEquals("ExponentPushToken[c]", pushes.sent.single().to)
+        assertEquals("A folded their strip. Pick up where they left off!", pushes.sent.single().body)
+
+        // The finished drawing keeps B's strip, now by "Deleted artist".
+        val forA = call(a, GET, "/drawings/$doneId").json()
+        assertEquals("Deleted artist", forA["artists"][0]["name"].asString())
+        assertEquals(2, forA["strips"].size())
+    }
+
+    @Test
+    fun `artists can report a drawing, strangers can't`() {
+        val a = newPlayer("A")
+        val stranger = newPlayer("Stranger")
+        val id = call(a, POST, "/drawings", mapOf("artistCount" to 2)).json()["id"].asString()
+
+        call(a, POST, "/drawings/$id/report", mapOf("reason" to "rude words")).andExpect { status { isNoContent() } }
+        call(a, POST, "/drawings/$id/report").andExpect { status { isNoContent() } }
+        call(stranger, POST, "/drawings/$id/report").andExpect { status { isNotFound() } }
+    }
+
+    @Test
+    fun `one player can only be in so many unfinished drawings`() {
+        val busy = newPlayer("Busy")
+        repeat(20) {
+            call(busy, POST, "/drawings", mapOf("artistCount" to 2)).andExpect { status { isCreated() } }
+        }
+        call(busy, POST, "/drawings", mapOf("artistCount" to 2)).andExpect { status { isConflict() } }
+        val other = call(newPlayer("Other"), POST, "/drawings", mapOf("artistCount" to 2)).json()
+        call(busy, POST, "/drawings/join", mapOf("code" to other["inviteCode"].asString()))
+            .andExpect { status { isConflict() } }
     }
 
     // --- helpers ---

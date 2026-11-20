@@ -12,6 +12,7 @@ import type { Stroke } from '@/game/types';
 import type { DrawingView } from '@/remote/api';
 import { clearDraft, loadDraft, saveDraft } from '@/remote/drafts';
 import { INVITE_LABEL, shareInvite } from '@/remote/invite';
+import { reportDrawing } from '@/remote/report';
 import { saveRemoteToGallery } from '@/game/store';
 import { api, usePlayer } from '@/remote/session';
 import { toGame } from '@/remote/to-game';
@@ -103,6 +104,7 @@ export default function RemoteScreen() {
         <ShareImageButton game={game} />
         <Button label="Back" variant="secondary" onPress={() => router.back()} />
         <Text style={styles.savedNote}>Saved to your gallery.</Text>
+        <Button label="Report" variant="ghost" onPress={() => reportDrawing(id)} />
       </RevealView>
     );
   }
@@ -185,6 +187,7 @@ export default function RemoteScreen() {
         <View style={styles.row}>
           <Button label="Back" variant="ghost" onPress={() => router.back()} />
           <Button label="Refresh" variant="ghost" onPress={load} />
+          <Button label="Report" variant="ghost" onPress={() => reportDrawing(id)} />
         </View>
       </ScrollView>
     </SafeAreaView>

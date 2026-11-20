@@ -11,7 +11,8 @@ import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
 import { useGameStore } from '@/game/store';
 import { type DrawingView } from '@/remote/api';
-import { api, setPlayerName, usePlayer } from '@/remote/session';
+import { confirm, notify } from '@/lib/confirm';
+import { api, deleteMyData, setPlayerName, usePlayer } from '@/remote/session';
 import { statusLine } from '@/remote/to-game';
 import { useArtistName } from '@/remote/use-artist-name';
 import { colors } from '@/theme';
@@ -82,6 +83,23 @@ export default function Friends() {
       if (!c) throw new Error('Type the code your friend sent you, like goose14.');
       router.push({ pathname: '/join/[code]', params: { code: c } });
     });
+
+  const deleteData = async () => {
+    const ok = await confirm(
+      'Delete your online data?',
+      'This removes your name and your spots in drawings you haven’t drawn in yet. Strips you already ' +
+        'folded stay in friends’ drawings as “Deleted artist”. Your gallery stays on this device.',
+      'Delete',
+    );
+    if (!ok) return;
+    try {
+      await deleteMyData();
+      setDrawings([]);
+      notify('Done', 'Your online data is deleted.');
+    } catch (e) {
+      notify('Couldn’t delete your data', e instanceof Error ? e.message : String(e));
+    }
+  };
 
   if (!ready) return <ActivityIndicator style={{ flex: 1 }} color={colors.brand} />;
 
@@ -181,6 +199,11 @@ export default function Friends() {
             </View>
           </View>
         )}
+        {session && (
+          <Pressable accessibilityRole="button" onPress={deleteData} style={styles.deleteLink}>
+            <Text style={styles.deleteText}>Delete my online data</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -249,6 +272,8 @@ const styles = StyleSheet.create({
   segmentTextOn: { color: colors.card },
   error: { color: colors.danger, fontSize: 14 },
   listBlock: { gap: 8 },
+  deleteLink: { alignSelf: 'center', padding: 8 },
+  deleteText: { fontSize: 13, color: colors.muted, textDecorationLine: 'underline' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   drawing: { flexGrow: 1, flexBasis: '45%', backgroundColor: colors.card, borderRadius: 12, padding: 12, gap: 2 },
   drawingHot: { borderWidth: 2, borderColor: colors.brand },

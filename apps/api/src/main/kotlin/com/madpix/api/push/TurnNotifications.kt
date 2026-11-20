@@ -20,7 +20,8 @@ class TurnNotifications(private val players: PlayerRepository, private val push:
                 PushMessage(
                     to = token,
                     title = "Your turn to draw",
-                    body = "${e.previousArtist} folded their strip. Pick up where they left off!",
+                    body = e.previousArtist?.let { "$it folded their strip. Pick up where they left off!" }
+                        ?: "You're up first. Start the drawing!",
                     data = mapOf("drawingId" to e.drawingId),
                 ),
             ),

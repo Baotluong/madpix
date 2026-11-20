@@ -17,7 +17,7 @@ class WebConfig(private val currentPlayer: CurrentPlayerResolver) : WebMvcConfig
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/**")
             .allowedOrigins("*")
-            .allowedMethods("GET", "POST", "PATCH")
+            .allowedMethods("GET", "POST", "PATCH", "DELETE")
             .allowedHeaders("Authorization", "Content-Type")
     }
 }

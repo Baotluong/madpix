@@ -72,8 +72,10 @@ export type InviteView = {
 
 // --- Requests ---
 
+export type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+
 export async function request<T>(
-  method: 'GET' | 'POST' | 'PATCH',
+  method: Method,
   path: string,
   opts: { token?: string | null; body?: unknown } = {},
 ): Promise<T> {
