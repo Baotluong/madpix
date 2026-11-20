@@ -29,7 +29,8 @@
           "imageWidth": 220
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "./plugins/with-android-build-settings"
     ],
     "experiments": {
       "typedRoutes": true,
