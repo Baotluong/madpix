@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { LegalLinks } from '@/components/legal-links';
 import { NameField } from '@/components/name-field';
 import type { InviteView } from '@/remote/api';
 import { api, setPlayerName, usePlayer } from '@/remote/session';
@@ -73,6 +74,12 @@ export default function Join() {
         )}
         {error && <Text style={styles.error}>{error}</Text>}
         {invite && !full && <Button label="Join and draw" onPress={join} disabled={busy} />}
+        {invite && !full && (
+          <Text style={styles.rules}>
+            By joining you agree to the rules: be kind, no hateful drawings or names.
+          </Text>
+        )}
+        <LegalLinks />
         <Button label="Back" variant="ghost" onPress={() => router.back()} />
       </View>
     </SafeAreaView>
@@ -105,4 +112,5 @@ const styles = StyleSheet.create({
   },
   nameLabel: { fontSize: 14, fontWeight: '700', color: colors.muted, textAlign: 'center' },
   error: { color: colors.danger, fontSize: 14, textAlign: 'center' },
+  rules: { fontSize: 13, color: colors.muted, textAlign: 'center' },
 });

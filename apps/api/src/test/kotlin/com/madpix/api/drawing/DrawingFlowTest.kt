@@ -37,6 +37,8 @@ class DrawingFlowTest(
     @Autowired private val pushes: RecordingPushSender,
 ) {
     companion object {
+        const val ADMIN = "test-admin-token"
+
         @JvmStatic
         @DynamicPropertySource
         fun db(registry: DynamicPropertyRegistry) {
@@ -45,6 +47,7 @@ class DrawingFlowTest(
             registry.add("madpix.db-path") { file.toString() }
             // These tests make lots of players from one address; AbuseFilterTest covers the limits.
             registry.add("madpix.rate-limit.enabled") { "false" }
+            registry.add("madpix.admin-token") { ADMIN }
         }
     }
 
@@ -230,7 +233,48 @@ class DrawingFlowTest(
             .andExpect { status { isConflict() } }
     }
 
+    @Test
+    fun `an admin can review a report, then delete the drawing or remove the player`() {
+        val a = newPlayer("A")
+        val troll = newPlayer("Troll")
+        val d = call(troll, POST, "/drawings", mapOf("artistCount" to 2)).json()
+        val id = d["id"].asString()
+        val rude = mapOf("color" to "#E53935", "width" to 6, "points" to listOf(10, 10, 990, 490))
+        call(troll, POST, "/drawings/$id/strip", mapOf("strokes" to listOf(rude)))
+        call(a, POST, "/drawings/join", mapOf("code" to d["inviteCode"].asString()))
+        call(a, POST, "/drawings/$id/report", mapOf("reason" to "rude"))
+
+        // Without the right token, the admin routes look like they don't exist.
+        mvc.request(GET, "/admin/reports").andExpect { status { isNotFound() } }
+        admin(GET, "/admin/reports", token = "wrong").andExpect { status { isNotFound() } }
+
+        val reports = admin(GET, "/admin/reports").andExpect { status { isOk() } }.json()
+        val report = (0 until reports.size()).map { reports[it] }.first { it["drawingId"].asString() == id }
+        assertEquals("rude", report["reason"].asString())
+        val trollId = report["artists"][0]["playerId"].asString()
+        assertEquals("Troll", report["artists"][0]["name"].asString())
+
+        val svg = admin(GET, "/admin/drawings/$id/svg").andExpect { status { isOk() } }
+            .andReturn().response.contentAsString
+        assertTrue(svg.startsWith("<svg") && "polyline" in svg && "1. Troll" in svg, svg)
+
+        // Removing the troll blanks their strip and wipes their name and login.
+        admin(POST, "/admin/players/$trollId/remove").andExpect { status { isNoContent() } }
+        call(troll, GET, "/players/me").andExpect { status { isUnauthorized() } }
+        val after = admin(GET, "/admin/drawings/$id/svg").andReturn().response.contentAsString
+        assertFalse("polyline" in after, "the troll's strip is blank")
+        assertTrue("Deleted artist" in after)
+
+        // Deleting the drawing takes it away for everyone.
+        admin(DELETE, "/admin/drawings/$id").andExpect { status { isNoContent() } }
+        call(a, GET, "/drawings/$id").andExpect { status { isNotFound() } }
+    }
+
     // --- helpers ---
+
+    private fun admin(method: HttpMethod, path: String, token: String = ADMIN) =
+        mvc.request(method, path) { header("Authorization", "Bearer $token") }
+
 
     private data class TestPlayer(val token: String)
 

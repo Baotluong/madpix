@@ -43,10 +43,17 @@ class RateLimiter(private val clock: Clock) {
 
     private val windows = ConcurrentHashMap<String, Window>()
 
+    @Volatile
+    private var lastSweep = 0L
+
     /** Counts this request and says whether it's within the limit. */
     fun allow(client: String, limit: Limit): Boolean {
         val now = clock.millis()
-        if (windows.size > MAX_KEYS) windows.values.removeIf { now - it.start >= HOUR }
+        // Forget addresses we haven't seen for an hour (the privacy policy promises this).
+        if (now - lastSweep > SWEEP_EVERY_MS || windows.size > MAX_KEYS) {
+            lastSweep = now
+            windows.values.removeIf { now - it.start >= HOUR }
+        }
         val window = windows.compute("${limit.name}:$client") { _, w ->
             if (w == null || now - w.start >= limit.windowMs) Window(now, 1) else w.apply { count++ }
         }!!
@@ -61,5 +68,6 @@ class RateLimiter(private val clock: Clock) {
 
     private companion object {
         const val MAX_KEYS = 50_000
+        const val SWEEP_EVERY_MS = 10 * MINUTE
     }
 }

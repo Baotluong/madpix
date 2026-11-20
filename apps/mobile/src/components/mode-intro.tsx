@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { LegalLinks } from '@/components/legal-links';
 import { markIntroSeen, useGameStore } from '@/game/store';
 import { colors } from '@/theme';
 
@@ -16,6 +17,7 @@ const INTROS = {
       'You draw first, right away. Share the invite code while you draw. Friends join any time and take the next spot.',
       'Each artist only sees a sliver of the strip above theirs. When the last one folds, everyone gets the whole page.',
       'Everyone in the same room? Use Pass around.',
+      'Be kind: no hateful, sexual or violent drawings or names. Anyone in a drawing can report it.',
     ],
   },
   pass: {
@@ -82,6 +84,7 @@ export function ModeIntro({ mode }: { mode: keyof typeof INTROS }) {
                   <Text style={styles.text}>{p}</Text>
                 </View>
               ))}
+              {mode === 'send' && <LegalLinks />}
               <Button label="Got it" onPress={close} style={{ marginTop: 6 }} />
             </ScrollView>
           </Pressable>

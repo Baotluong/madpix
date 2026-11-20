@@ -162,6 +162,28 @@ class DrawingRepository(private val jdbc: JdbcClient) {
             .update()
     }
 
+    data class ReportRow(val drawingId: String, val reporterId: String, val reason: String?, val createdAt: Instant)
+
+    /** Newest reports first, for review. */
+    fun recentReports(limit: Int): List<ReportRow> =
+        jdbc.sql("SELECT * FROM reports ORDER BY created_at DESC LIMIT ?")
+            .param(limit)
+            .query { rs, _ ->
+                ReportRow(
+                    drawingId = rs.getString("drawing_id"),
+                    reporterId = rs.getString("reporter_id"),
+                    reason = rs.getString("reason"),
+                    createdAt = Instant.parse(rs.getString("created_at")),
+                )
+            }.list()
+
+    /** Blanks every strip the player folded (a removed player's drawings could be the problem). */
+    fun blankStrokesBy(playerId: String) {
+        jdbc.sql("UPDATE seats SET strokes = '[]' WHERE player_id = ? AND strokes IS NOT NULL")
+            .param(playerId)
+            .update()
+    }
+
     fun clearInviteCode(drawingId: String) {
         jdbc.sql("UPDATE drawings SET invite_code = NULL WHERE id = ?").param(drawingId).update()
     }

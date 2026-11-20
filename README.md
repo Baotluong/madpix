@@ -9,6 +9,7 @@ At the end, the page unfolds and everyone sees the whole picture.
 | Path | What |
 |---|---|
 | `apps/mobile` | Expo (React Native + TypeScript) app for Android, iOS and web |
+| `docs` | Rules and privacy policy, published with GitHub Pages; the contact email is in `docs/_config.yml` |
 | `apps/api` | Kotlin + Spring Boot API for remote play (v1, in progress). See [its README](apps/api/README.md). |
 
 ## Run the app

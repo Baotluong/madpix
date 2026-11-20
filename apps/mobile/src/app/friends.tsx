@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { DieButton } from '@/components/die-button';
+import { LegalLinks } from '@/components/legal-links';
 import { ModeIntro } from '@/components/mode-intro';
 import { NameField } from '@/components/name-field';
 import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
@@ -199,11 +200,10 @@ export default function Friends() {
             </View>
           </View>
         )}
-        {session && (
-          <Pressable accessibilityRole="button" onPress={deleteData} style={styles.deleteLink}>
-            <Text style={styles.deleteText}>Delete my online data</Text>
-          </Pressable>
-        )}
+        <Text style={styles.rulesLine}>
+          By playing you agree to the rules: be kind, no hateful, sexual or violent drawings or names.
+        </Text>
+        <LegalLinks extra={session ? [{ label: 'Delete my online data', onPress: deleteData }] : []} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -272,8 +272,7 @@ const styles = StyleSheet.create({
   segmentTextOn: { color: colors.card },
   error: { color: colors.danger, fontSize: 14 },
   listBlock: { gap: 8 },
-  deleteLink: { alignSelf: 'center', padding: 8 },
-  deleteText: { fontSize: 13, color: colors.muted, textDecorationLine: 'underline' },
+  rulesLine: { fontSize: 13, color: colors.muted, textAlign: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   drawing: { flexGrow: 1, flexBasis: '45%', backgroundColor: colors.card, borderRadius: 12, padding: 12, gap: 2 },
   drawingHot: { borderWidth: 2, borderColor: colors.brand },

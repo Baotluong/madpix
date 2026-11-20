@@ -50,12 +50,28 @@ never reaches their phone.
 - A player can be in at most 20 unfinished drawings.
 - Reports show up in `fly logs` as `Drawing reported: ...`.
 
+### Moderation
+
+`/admin/...` routes list reports, draw a reported drawing as an SVG, delete a drawing, or remove a
+player (their strips are blanked, name and login wiped). They need the `ADMIN_TOKEN` secret and
+answer 404 to everyone else. One-time setup (keeps the token in your Keychain, never in a file):
+
+```bash
+ADMIN_TOKEN=$(openssl rand -hex 32)
+security add-generic-password -a madpix -s madpix-admin -w "$ADMIN_TOKEN"
+fly secrets set ADMIN_TOKEN="$ADMIN_TOKEN" -a madpix-api
+```
+
+Then `./admin.sh reports`, `./admin.sh show <drawing-id>`, `./admin.sh delete <drawing-id>`,
+`./admin.sh remove <player-id>`.
+
 Errors are RFC 9457 problem details, e.g. `{"status": 409, "detail": "It's not your turn"}`.
 
 ## Layout
 
 | Path | What |
 |---|---|
+| `admin/` | Moderation routes (`ADMIN_TOKEN`), used by `admin.sh` |
 | `common/` | Errors, CORS, and `AbuseFilter` (rate limits, body size) |
 | `player/` | Anonymous players, token auth (`@CurrentPlayer`) |
 | `drawing/` | Rules (`DrawingService`), SQL (`DrawingRepository`), sliver cutting, validation |
