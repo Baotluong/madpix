@@ -45,12 +45,12 @@ MadPix doesn't ask for your name, email or phone number. Pass around drawings ne
 Be kind: hateful, sexual or violent drawings and names aren't allowed, and anyone in a drawing can report it.
 ```
 
-**Graphics** (still to make)
+**Graphics**
 
 | Asset | Size | Notes |
 |---|---|---|
-| App icon | 512×512 PNG | Scale down `assets/images/icon.png` (1024×1024). |
-| Feature graphic | 1024×500 PNG or JPG | Shown at the top of the listing. Keep text large and centered. |
+| App icon | 512×512 PNG | Done: [graphics/icon-512.png](graphics/icon-512.png), scaled from `assets/images/icon.png`. |
+| Feature graphic | 1024×500 PNG | Done: [graphics/feature-graphic.png](graphics/feature-graphic.png). Edit the HTML next to it and re-render with the command at its top. |
 | Phone screenshots | 2–8, 16:9 landscape works | Take them on a phone during testing: the home screen, drawing a strip, the sliver hint, and a finished unfolded page. |
 
 **Category:** Game → Casual. **Tags:** drawing, party, multiplayer (pick what Play offers).
