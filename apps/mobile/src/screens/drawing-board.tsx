@@ -3,7 +3,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { canvasHeight, DrawingCanvas } from '@/drawing/drawing-canvas';
@@ -14,7 +14,7 @@ import type { Game, Stroke } from '@/game/types';
 import { confirm, notify } from '@/lib/confirm';
 import { colors, PALETTE, SIZES } from '@/theme';
 
-const PANEL_PAD = 8;
+const PANEL_PAD = 10;
 const PANEL_W = PANEL_CONTENT_W + PANEL_PAD * 2;
 const RAIL_W = 52;
 /** Breathing room between the paper and the edge of the desk. */
@@ -39,7 +39,8 @@ type Props = {
 export function DrawingBoard({ game, initialStrokes, onDraft, onDone, onQuit, quitLabel = 'Quit', onInvite }: Props) {
 
   const turn = game.sections.length;
-  const artist = game.artists[turn];
+  // The panel grows by the right inset (Android's nav bar in landscape) instead of losing that room.
+  const insets = useSafeAreaInsets();
   const isLast = turn === game.artists.length - 1;
   const unitsH = stripHeight(game);
   const { width: W, height: H } = useWindowDimensions();
@@ -169,7 +170,9 @@ export function DrawingBoard({ game, initialStrokes, onDraft, onDone, onQuit, qu
       </SafeAreaView>
 
       {collapsed ? (
-        <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.rail}>
+        <SafeAreaView
+          edges={['top', 'bottom', 'right']}
+          style={[styles.rail, { width: RAIL_W + insets.right }]}>
           <IconButton plain size={34} label="Show tools" onPress={() => setCollapsed(false)}>
             <Ionicons name="chevron-back" size={24} color={colors.ink} />
           </IconButton>
@@ -192,24 +195,19 @@ export function DrawingBoard({ game, initialStrokes, onDraft, onDone, onQuit, qu
           </IconButton>
         </SafeAreaView>
       ) : (
-        <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.panel}>
-          <View style={styles.panelTop}>
-            <View style={styles.artistRow}>
-              <Text style={styles.artist} numberOfLines={1}>
-                {artist}
-              </Text>
-              <IconButton plain size={34} label="Hide tools" onPress={() => setCollapsed(true)}>
-                <Ionicons name="chevron-forward" size={24} color={colors.ink} />
-              </IconButton>
-            </View>
-            <View style={styles.controls}>
-              <IconButton plain size={34} label={quitLabel} onPress={onQuit}>
-                <Ionicons name="close" size={24} color={colors.muted} />
-              </IconButton>
-              {inspoButton}
-              {inviteButton}
-              {eyeButton}
-            </View>
+        <SafeAreaView
+          edges={['top', 'bottom', 'right']}
+          style={[styles.panel, { width: PANEL_W + insets.right }]}>
+          <View style={styles.controls}>
+            <IconButton plain size={34} label={quitLabel} onPress={onQuit}>
+              <Ionicons name="close" size={24} color={colors.muted} />
+            </IconButton>
+            {inspoButton}
+            {inviteButton}
+            {eyeButton}
+            <IconButton plain size={34} label="Hide tools" onPress={() => setCollapsed(true)}>
+              <Ionicons name="chevron-forward" size={24} color={colors.ink} />
+            </IconButton>
           </View>
           <Toolbar
             vertical
@@ -262,20 +260,15 @@ const styles = StyleSheet.create({
   },
   inspoBubbleText: { color: colors.card, fontSize: 15 },
   panel: {
-    width: PANEL_W,
     paddingHorizontal: PANEL_PAD,
     paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.bg,
   },
-  panelTop: { alignSelf: 'stretch', gap: 2 },
-  artistRow: { flexDirection: 'row', alignItems: 'center' },
-  artist: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.ink, paddingLeft: 4 },
-  controls: { flexDirection: 'row', justifyContent: 'space-between' },
+  controls: { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'space-between' },
   done: { alignSelf: 'stretch', minHeight: 44 },
   rail: {
-    width: RAIL_W,
     paddingVertical: 8,
     alignItems: 'center',
     gap: 6,
