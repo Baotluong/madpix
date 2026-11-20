@@ -8,6 +8,7 @@
     "scheme": "madpix",
     "userInterfaceStyle": "light",
     "android": {
+      "package": "com.madpixdev.madpix",
       "adaptiveIcon": {
         "backgroundColor": "#5B8DE6",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
@@ -33,6 +34,9 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.madpixdev.madpix"
     }
   }
 }
