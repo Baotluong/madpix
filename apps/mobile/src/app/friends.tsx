@@ -7,15 +7,14 @@ import { Button } from '@/components/button';
 import { DieButton } from '@/components/die-button';
 import { LegalLinks } from '@/components/legal-links';
 import { ModeIntro } from '@/components/mode-intro';
-import { NameField } from '@/components/name-field';
+import { NameChip } from '@/components/name-chip';
 import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
 import { useGameStore } from '@/game/store';
 import { type DrawingView } from '@/remote/api';
 import { confirm, notify } from '@/lib/confirm';
-import { api, deleteMyData, setPlayerName, usePlayer } from '@/remote/session';
+import { api, deleteMyData, ensurePlayer, usePlayer } from '@/remote/session';
 import { statusLine } from '@/remote/to-game';
-import { useArtistName } from '@/remote/use-artist-name';
 import { colors } from '@/theme';
 
 const COUNTS = Array.from({ length: MAX_ARTISTS - MIN_ARTISTS + 1 }, (_, i) => MIN_ARTISTS + i);
@@ -24,9 +23,9 @@ const COUNTS = Array.from({ length: MAX_ARTISTS - MIN_ARTISTS + 1 }, (_, i) => M
 export default function Friends() {
   const { ready, session } = usePlayer();
   const seen = useGameStore((s) => s.seenRemote);
-  const [name, setName] = useArtistName();
   const [count, setCount] = useState(2);
   const [inspoOn, setInspoOn] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
   const [prompt, setPrompt] = useState(() => randomPrompt());
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState<'start' | 'join' | null>(null);
@@ -60,9 +59,7 @@ export default function Friends() {
     setBusy(where);
     setError(null);
     try {
-      const trimmed = name.trim();
-      if (!trimmed) throw new Error('Pick a name first (or roll the die), so friends know who drew what.');
-      if (!session || session.player.name !== trimmed) await setPlayerName(trimmed);
+      await ensurePlayer();
       await action();
     } catch (e) {
       setError({ where, message: e instanceof Error ? e.message : String(e) });
@@ -74,7 +71,7 @@ export default function Friends() {
   const start = () =>
     run('start', async () => {
       const word = inspoOn && prompt.trim() ? prompt.trim() : null;
-      const view = await api.create(count, word);
+      const view = await api.create(count, word, isPublic);
       router.push({ pathname: '/remote/[id]', params: { id: view.id } });
     });
 
@@ -113,10 +110,7 @@ export default function Friends() {
     <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ModeIntro mode="send" />
-        <View style={styles.nameBlock}>
-          <Text style={styles.nameLabel}>You&apos;re drawing as</Text>
-          <NameField value={name} onChange={setName} />
-        </View>
+        <NameChip />
 
         <View style={styles.modes}>
           <View style={styles.card}>
@@ -158,6 +152,18 @@ export default function Friends() {
                   />
                 </>
               )}
+            </View>
+            <View style={styles.row}>
+              <Switch
+                value={isPublic}
+                onValueChange={setIsPublic}
+                trackColor={{ true: colors.brand, false: colors.line }}
+                thumbColor={colors.card}
+              />
+              <Text style={styles.inspoLabel}>Public</Text>
+              <Text style={styles.muted} numberOfLines={1}>
+                {isPublic ? 'Anyone can join through Play now' : 'Only people with the code'}
+              </Text>
             </View>
             <Button label={busy === 'start' ? 'Starting...' : 'Start drawing'} onPress={start} disabled={!!busy} />
             {error?.where === 'start' && <Text style={styles.error}>{error.message}</Text>}
@@ -230,7 +236,11 @@ function DrawingCard({ view }: { view: DrawingView }) {
       </Text>
       <Text style={[styles.status, (view.myTurn || finished) && styles.statusHot]}>{statusLine(view)}</Text>
       <Text style={styles.muted} numberOfLines={1}>
-        {[view.prompt && `Inspo: ${view.prompt}`, view.inviteCode && `Code: ${view.inviteCode}`]
+        {[
+          view.visibility === 'PUBLIC' && 'Public',
+          view.prompt && `Inspo: ${view.prompt}`,
+          view.inviteCode && `Code: ${view.inviteCode}`,
+        ]
           .filter(Boolean)
           .join(' · ')}
       </Text>
@@ -240,8 +250,6 @@ function DrawingCard({ view }: { view: DrawingView }) {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 14, width: '100%', maxWidth: 900, alignSelf: 'center' },
-  nameBlock: { alignSelf: 'center', width: '100%', maxWidth: 420, gap: 4 },
-  nameLabel: { fontSize: 14, fontWeight: '700', color: colors.muted, textAlign: 'center' },
   modes: { flexDirection: 'row', gap: 14 },
   card: { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 14, gap: 8 },
   title: { fontSize: 18, fontWeight: '800', color: colors.ink },

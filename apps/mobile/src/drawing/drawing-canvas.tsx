@@ -6,6 +6,7 @@ import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import { SLIVER, STRIP_W } from '@/game/geometry';
 import type { Stroke } from '@/game/types';
 import { colors } from '@/theme';
+import { PaperGrain } from './paper';
 import { StrokeShape, Strokes } from './strokes';
 
 type Props = {
@@ -113,6 +114,7 @@ export function DrawingCanvas(p: Props) {
               {live && <StrokeShape stroke={live} />}
             </Group>
           </Group>
+          <PaperGrain width={width} height={height} />
 
           {prevStrokes && (
             <Line p1={{ x: 0, y: sliverPx }} p2={{ x: width, y: sliverPx }} color={colors.brand} strokeWidth={2}>

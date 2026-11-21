@@ -2,18 +2,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import { ApiError, request, type DrawingView, type InviteView, type Method, type PlayerView } from './api';
+import { randomArtistName } from './names';
 import type { Stroke } from '@/game/types';
 
 /**
  * Who this device plays as. No accounts: the API hands out a token once and the
  * device keeps it. Losing it (uninstalling) means starting over as a new player.
+ *
+ * The artist name is set once (a random one to start) and changed from the name chip. The
+ * player is only created on the server the first time it's needed online.
  */
 
 type Session = { player: PlayerView; token: string };
-type State = { ready: boolean; session: Session | null };
+type State = { ready: boolean; session: Session | null; name: string };
 
 const KEY = 'madpix:player';
-let state: State = { ready: false, session: null };
+const NAME_KEY = 'madpix:name';
+let state: State = { ready: false, session: null, name: '' };
 const listeners = new Set<() => void>();
 
 function set(next: State) {
@@ -22,17 +27,23 @@ function set(next: State) {
 }
 
 async function hydrate() {
+  let session: Session | null = null;
+  let name: string | null = null;
   try {
-    const raw = await AsyncStorage.getItem(KEY);
-    set({ ready: true, session: raw ? (JSON.parse(raw) as Session) : null });
+    const [raw, savedName] = await Promise.all([AsyncStorage.getItem(KEY), AsyncStorage.getItem(NAME_KEY)]);
+    session = raw ? (JSON.parse(raw) as Session) : null;
+    name = savedName;
   } catch {
-    set({ ready: true, session: null });
+    // Unreadable storage: start fresh.
   }
+  name = session?.player.name ?? name ?? randomArtistName();
+  AsyncStorage.setItem(NAME_KEY, name).catch(() => {});
+  set({ ready: true, session, name });
 }
-hydrate();
+const hydrated = hydrate();
 
 async function save(session: Session | null) {
-  set({ ...state, session });
+  set({ ...state, session, name: session?.player.name ?? state.name });
   if (session) await AsyncStorage.setItem(KEY, JSON.stringify(session));
   else await AsyncStorage.removeItem(KEY);
 }
@@ -48,21 +59,23 @@ export function usePlayer() {
   );
 }
 
-/** Creates this device's player the first time, or renames it. */
-export async function setPlayerName(name: string): Promise<PlayerView> {
+/** Changes the artist name (creating this device's player if it hasn't played online yet). */
+export async function setPlayerName(name: string) {
   const trimmed = name.trim();
+  if (!trimmed) throw new Error('Pick a name first (or roll the die).');
   if (state.session) {
-    const player = await authed<PlayerView>('PATCH', '/players/me', {
-      name: trimmed,
-    });
+    const player = await authed<PlayerView>('PATCH', '/players/me', { name: trimmed });
     await save({ ...state.session, player });
-    return player;
+  } else {
+    await save(await request<Session>('POST', '/players', { body: { name: trimmed } }));
   }
-  const created = await request<{ player: PlayerView; token: string }>('POST', '/players', {
-    body: { name: trimmed },
-  });
-  await save(created);
-  return created.player;
+  await AsyncStorage.setItem(NAME_KEY, trimmed);
+}
+
+/** Makes sure this device has an online player, under the artist name. */
+export async function ensurePlayer() {
+  await hydrated;
+  if (!state.session) await save(await request<Session>('POST', '/players', { body: { name: state.name } }));
 }
 
 /** A request as this device's player. A rejected token means the API forgot us: start fresh. */
@@ -80,8 +93,13 @@ async function authed<T>(method: Method, path: string, body?: unknown): Promise<
 export const api = {
   myDrawings: () => authed<DrawingView[]>('GET', '/drawings'),
   drawing: (id: string) => authed<DrawingView>('GET', `/drawings/${id}`),
-  create: (artistCount: number, prompt: string | null) =>
-    authed<DrawingView>('POST', '/drawings', { artistCount, prompt }),
+  create: (artistCount: number, prompt: string | null, isPublic: boolean) =>
+    authed<DrawingView>('POST', '/drawings', { artistCount, prompt, public: isPublic }),
+  /** A public drawing where it's my turn now, or a new one. [prompt] is used if a new one gets inspo. */
+  playNow: (prompt: string) => authed<DrawingView>('POST', '/drawings/play-now', { prompt }),
+  /** "Draw again": the one rematch of a finished drawing, with the same artists. */
+  rematch: (id: string, prompt: string) => authed<DrawingView>('POST', `/drawings/${id}/rematch`, { prompt }),
+  block: (id: string, position: number) => authed<null>('POST', `/drawings/${id}/block`, { position }),
   join: (code: string) => authed<DrawingView>('POST', '/drawings/join', { code }),
   submitStrip: (id: string, strokes: Stroke[]) =>
     authed<DrawingView>('POST', `/drawings/${id}/strip`, { strokes }),

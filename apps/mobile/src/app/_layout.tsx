@@ -31,6 +31,7 @@ export default function RootLayout() {
         <Stack.Screen name="friends" options={{ title: 'Send around' }} />
         <Stack.Screen name="join/[code]" options={{ title: 'Join a drawing' }} />
         <Stack.Screen name="remote/[id]" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="view/[id]" options={{ headerShown: false, animation: 'fade' }} />
       </Stack>
     </GestureHandlerRootView>
   );

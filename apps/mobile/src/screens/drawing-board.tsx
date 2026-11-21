@@ -12,6 +12,7 @@ import { IconButton, PANEL_CONTENT_W, Toolbar, type Tool } from '@/drawing/toolb
 import { STRIP_W, stripHeight } from '@/game/geometry';
 import type { Game, Stroke } from '@/game/types';
 import { confirm, notify } from '@/lib/confirm';
+import { ERASER } from '@/drawing/paper';
 import { colors, PALETTE, SIZES } from '@/theme';
 
 const PANEL_PAD = 10;
@@ -149,7 +150,7 @@ export function DrawingBoard({ game, initialStrokes, onDraft, onDone, onQuit, qu
                 strokes={strokes}
                 prevStrokes={hasSliver ? game.sections[turn - 1].strokes : undefined}
                 showNextHint={!isLast}
-                color={tool === 'eraser' ? colors.paper : color}
+                color={tool === 'eraser' ? ERASER : color}
                 penWidth={tool === 'eraser' ? SIZES[sizeIndex] * 2 : SIZES[sizeIndex]}
                 onStroke={(s) => commit([...strokes, s])}
               />

@@ -5,18 +5,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { LegalLinks } from '@/components/legal-links';
-import { NameField } from '@/components/name-field';
+import { NameChip } from '@/components/name-chip';
 import type { InviteView } from '@/remote/api';
-import { api, setPlayerName, usePlayer } from '@/remote/session';
-import { useArtistName } from '@/remote/use-artist-name';
+import { api, ensurePlayer, usePlayer } from '@/remote/session';
 import { colors } from '@/theme';
 
 /** Opened from an invite code (or link): who's in, then join. */
 export default function Join() {
   const { code } = useLocalSearchParams<{ code: string }>();
-  const { ready, session } = usePlayer();
+  const { ready } = usePlayer();
   const [invite, setInvite] = useState<InviteView | null>(null);
-  const [name, setName] = useArtistName();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,9 +33,7 @@ export default function Join() {
     setBusy(true);
     setError(null);
     try {
-      const trimmed = name.trim();
-      if (!trimmed) throw new Error('Pick a name first (or roll the die), so friends know who drew what.');
-      if (!session || session.player.name !== trimmed) await setPlayerName(trimmed);
+      await ensurePlayer();
       const view = await api.join(code);
       router.replace({ pathname: '/remote/[id]', params: { id: view.id } });
     } catch (e) {
@@ -66,12 +62,7 @@ export default function Join() {
             </Text>
           </>
         )}
-        {!full && invite && (
-          <View style={{ gap: 4 }}>
-            <Text style={styles.nameLabel}>You&apos;re drawing as</Text>
-            <NameField value={name} onChange={setName} />
-          </View>
-        )}
+        {!full && invite && <NameChip />}
         {error && <Text style={styles.error}>{error}</Text>}
         {invite && !full && <Button label="Join and draw" onPress={join} disabled={busy} />}
         {invite && !full && (
@@ -110,7 +101,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  nameLabel: { fontSize: 14, fontWeight: '700', color: colors.muted, textAlign: 'center' },
   error: { color: colors.danger, fontSize: 14, textAlign: 'center' },
   rules: { fontSize: 13, color: colors.muted, textAlign: 'center' },
 });

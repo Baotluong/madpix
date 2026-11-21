@@ -9,13 +9,25 @@ import { markIntroSeen, useGameStore } from '@/game/store';
 import { colors } from '@/theme';
 
 const INTROS = {
+  play: {
+    title: 'Play now',
+    tag: 'Online, anyone',
+    points: [
+      'Jump into a drawing with other MadPix players. No code, no waiting for friends.',
+      'It’s your turn as soon as you join: you’ll see a sliver of the strip above yours. Sometimes you start a fresh page instead.',
+      'Each turn has 12 hours. Miss yours and the spot goes to someone else.',
+      'When the last artist folds, the page unfolds for everyone. Find your drawings under Send around.',
+      'Be kind: no hateful, sexual or violent drawings or names. Report drawings, and block artists you don’t want to draw with again.',
+    ],
+  },
   send: {
     title: 'Send around',
-    tag: 'Online',
+    tag: 'Online, friends',
     points: [
       'Every artist draws on their own phone, whenever they’re free.',
       'You draw first, right away. Share the invite code while you draw. Friends join any time and take the next spot.',
       'Each artist only sees a sliver of the strip above theirs. When the last one folds, everyone gets the whole page.',
+      'Turn on Public to let anyone join through Play now.',
       'Everyone in the same room? Use Pass around.',
       'Be kind: no hateful, sexual or violent drawings or names. Anyone in a drawing can report it.',
     ],
@@ -32,11 +44,13 @@ const INTROS = {
   },
 } as const;
 
+type Mode = keyof typeof INTROS;
+
 /**
  * How a mode works: shown once per device the first time the screen opens, then again from the
  * (i) button in the header.
  */
-export function ModeIntro({ mode }: { mode: keyof typeof INTROS }) {
+export function ModeIntro({ mode }: { mode: Mode }) {
   const intro = INTROS[mode];
   const ready = useGameStore((s) => s.ready);
   const seen = useGameStore((s) => s.seenIntros.includes(mode));
@@ -64,33 +78,41 @@ export function ModeIntro({ mode }: { mode: keyof typeof INTROS }) {
           ),
         }}
       />
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-        supportedOrientations={['landscape', 'portrait']}
-        onRequestClose={close}>
-        <Pressable style={styles.backdrop} onPress={close}>
-          {/* Taps on the card itself shouldn't close it. */}
-          <Pressable style={styles.card} onPress={() => {}}>
-            <ScrollView contentContainerStyle={styles.cardContent}>
-              <View style={styles.header}>
-                <Text style={styles.title}>{intro.title}</Text>
-                <Text style={styles.tag}>{intro.tag}</Text>
-              </View>
-              {intro.points.map((p) => (
-                <View key={p} style={styles.point}>
-                  <Text style={styles.bullet}>•</Text>
-                  <Text style={styles.text}>{p}</Text>
-                </View>
-              ))}
-              {mode === 'send' && <LegalLinks />}
-              <Button label="Got it" onPress={close} style={{ marginTop: 6 }} />
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <IntroCard mode={mode} visible={visible} onClose={close} />
     </>
+  );
+}
+
+/** The intro itself, for screens that decide when to show it (like Play now on the home screen). */
+export function IntroCard({ mode, visible, onClose }: { mode: Mode; visible: boolean; onClose: () => void }) {
+  const intro = INTROS[mode];
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      supportedOrientations={['landscape', 'portrait']}
+      onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        {/* Taps on the card itself shouldn't close it. */}
+        <Pressable style={styles.card} onPress={() => {}}>
+          <ScrollView contentContainerStyle={styles.cardContent}>
+            <View style={styles.header}>
+              <Text style={styles.title}>{intro.title}</Text>
+              <Text style={styles.tag}>{intro.tag}</Text>
+            </View>
+            {intro.points.map((p) => (
+              <View key={p} style={styles.point}>
+                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.text}>{p}</Text>
+              </View>
+            ))}
+            {mode !== 'pass' && <LegalLinks />}
+            <Button label="Got it" onPress={onClose} style={{ marginTop: 6 }} />
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 

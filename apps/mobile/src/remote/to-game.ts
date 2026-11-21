@@ -35,3 +35,11 @@ export function statusLine(view: DrawingView): string {
   const next = view.artists[view.turn];
   return `${next.name}'s turn`;
 }
+
+/** When a timed turn runs out, in words: "3:40 PM", or "Sat 3:40 PM" if it's not today. */
+export function untilLabel(iso: string): string {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (d.toDateString() === new Date().toDateString()) return time;
+  return `${d.toLocaleDateString([], { weekday: 'short' })} ${time}`;
+}

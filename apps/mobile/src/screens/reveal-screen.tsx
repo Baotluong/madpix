@@ -7,6 +7,7 @@ import { randomPrompt } from '@/game/prompts';
 import { deleteFromGallery, startGame, useGameStore } from '@/game/store';
 import { confirm } from '@/lib/confirm';
 import { goHome } from '@/lib/go-home';
+import { drawAgain } from '@/remote/rematch';
 import { colors } from '@/theme';
 import { RevealView } from './reveal-view';
 
@@ -37,6 +38,9 @@ export default function RevealScreen() {
   return (
     <RevealView game={game} animate={animate}>
       <ShareImageButton game={game} />
+      {game.remote && (
+        <Button label="Draw again, same artists" variant="secondary" onPress={() => drawAgain(game.id)} />
+      )}
       {!game.remote && (
         <Button
           label="New drawing, same artists"

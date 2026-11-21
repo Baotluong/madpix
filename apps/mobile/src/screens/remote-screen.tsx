@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BlockButton } from '@/components/block-button';
 import { Button } from '@/components/button';
 import { CoverScreen } from '@/components/cover-screen';
 import { ShareImageButton } from '@/components/share-image-button';
@@ -12,10 +13,11 @@ import type { Stroke } from '@/game/types';
 import type { DrawingView } from '@/remote/api';
 import { clearDraft, loadDraft, saveDraft } from '@/remote/drafts';
 import { INVITE_LABEL, shareInvite } from '@/remote/invite';
+import { drawAgain } from '@/remote/rematch';
 import { reportDrawing } from '@/remote/report';
 import { saveRemoteToGallery } from '@/game/store';
 import { api, usePlayer } from '@/remote/session';
-import { toGame } from '@/remote/to-game';
+import { toGame, untilLabel } from '@/remote/to-game';
 import { colors } from '@/theme';
 import { DrawingBoard } from './drawing-board';
 import { RevealView } from './reveal-view';
@@ -33,6 +35,7 @@ export default function RemoteScreen() {
   const [draft, setDraft] = useState<Stroke[] | null>(null);
   // Unfold strip by strip only if the page finished while this screen was open.
   const [justFinished, setJustFinished] = useState(false);
+  const [rematching, setRematching] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -97,14 +100,31 @@ export default function RemoteScreen() {
   const openSpots = view.artists.filter((a) => !a.joined).length;
   const invite = code ? () => shareInvite(code, me) : undefined;
 
+  const isPublic = view.visibility === 'PUBLIC';
+  const deadline = view.turnEndsAt ? untilLabel(view.turnEndsAt) : null;
+
   if (view.status === 'FINISHED') {
     const game = toGame(view);
     return (
       <RevealView game={game} animate={justFinished}>
+        <Button
+          label={rematching ? 'Starting...' : 'Draw again, same artists'}
+          disabled={rematching}
+          onPress={async () => {
+            setRematching(true);
+            await drawAgain(id);
+            setRematching(false);
+          }}
+        />
         <ShareImageButton game={game} />
         <Button label="Back" variant="secondary" onPress={() => router.back()} />
         <Text style={styles.savedNote}>Saved to your gallery.</Text>
-        <Button label="Report" variant="ghost" onPress={() => reportDrawing(id)} />
+        <View style={styles.row}>
+          <Button label="Report" variant="ghost" onPress={() => reportDrawing(id)} style={{ flex: 1 }} />
+          <View style={{ flex: 1 }}>
+            <BlockButton drawingId={id} artists={view.artists} />
+          </View>
+        </View>
       </RevealView>
     );
   }
@@ -139,12 +159,13 @@ export default function RemoteScreen() {
     const prev = view.artists[view.turn - 1]?.name;
     return (
       <CoverScreen
-        step={`Artist ${view.myPosition + 1} of ${view.artistCount}`}
+        step={`${isPublic ? 'Public drawing · ' : ''}Artist ${view.myPosition + 1} of ${view.artistCount}`}
         title={first ? 'You start!' : `Your turn, ${me}!`}
         body={
-          first
+          (first
             ? 'Draw anything in the top strip. The next artist only sees its bottom edge.'
-            : `${prev} folded their strip. You'll see a thin sliver of it above yours. Continue from it!`
+            : `${prev} folded their strip. You'll see a thin sliver of it above yours. Continue from it!`) +
+          (deadline ? ` You have until ${deadline}.` : '')
         }
         prompt={view.prompt}>
         {code && invite && <InviteCard code={code} openSpots={openSpots} onShare={invite} light />}
@@ -169,8 +190,12 @@ export default function RemoteScreen() {
         </Text>
         <Text style={styles.body}>
           {view.waitingForArtist
-            ? `Spot ${view.turn + 1} is open. Send the code to a friend; they start as soon as they join.`
-            : "We'll pick it up here when it changes. You can leave and come back."}
+            ? isPublic
+              ? `Spot ${view.turn + 1} is open. The next Play now artist takes it, or send the code to a friend.`
+              : `Spot ${view.turn + 1} is open. Send the code to a friend; they start as soon as they join.`
+            : deadline
+              ? `They have until ${deadline}, then the spot opens for someone else. You can leave and come back.`
+              : "We'll pick it up here when it changes. You can leave and come back."}
         </Text>
         {/* Side by side, so the page fits a landscape phone without scrolling. */}
         <View style={styles.waitRow}>
@@ -188,6 +213,7 @@ export default function RemoteScreen() {
           <Button label="Back" variant="ghost" onPress={() => router.back()} />
           <Button label="Refresh" variant="ghost" onPress={load} />
           <Button label="Report" variant="ghost" onPress={() => reportDrawing(id)} />
+          <BlockButton drawingId={id} artists={view.artists} />
         </View>
       </ScrollView>
     </SafeAreaView>

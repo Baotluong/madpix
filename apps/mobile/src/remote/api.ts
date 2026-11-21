@@ -43,6 +43,8 @@ export type ArtistView = {
 
 export type DrawingView = {
   id: string;
+  /** Public drawings can be joined by anyone through "Play now". */
+  visibility: 'PUBLIC' | 'PRIVATE';
   /** Like "goose14". Null once every spot is taken. */
   inviteCode: string | null;
   artistCount: number;
@@ -58,6 +60,10 @@ export type DrawingView = {
   sliver: Stroke[] | null;
   /** Only once finished. */
   strips: Stroke[][] | null;
+  /** Public drawings and rematches: when the current artist loses their spot if they haven't folded. */
+  turnEndsAt: string | null;
+  /** Set on a rematch: the drawing it came from. */
+  rematchOf: string | null;
   createdAt: string;
   finishedAt: string | null;
 };
