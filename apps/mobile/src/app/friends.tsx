@@ -25,7 +25,7 @@ export default function Friends() {
   const { ready, session } = usePlayer();
   const seen = useGameStore((s) => s.seenRemote);
   const [name, setName] = useArtistName();
-  const [count, setCount] = useState(3);
+  const [count, setCount] = useState(2);
   const [inspoOn, setInspoOn] = useState(true);
   const [prompt, setPrompt] = useState(() => randomPrompt());
   const [code, setCode] = useState('');

@@ -44,7 +44,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "web": "expo start --web",
-    "deploy:web": "EXPO_PUBLIC_API_URL=https://madpix-api.fly.dev expo export -p web && npx --yes wrangler@4 pages deploy dist --project-name madpix --branch main",
+    "deploy:web": "EXPO_PUBLIC_API_URL=https://madpix-api.fly.dev expo export -p web && node scripts/fix-web-assets.js && npx --yes wrangler@4 pages deploy dist --project-name madpix --branch main",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "postinstall": "setup-skia-web public"
