@@ -70,6 +70,8 @@ class PlayerRepository(private val jdbc: JdbcClient) {
             .param("tokenHash", "deleted:$id")
             .param("now", now.toString())
             .update()
+        // Blocks they made go too. Blocks others made against them stay: those are the others' choice.
+        jdbc.sql("DELETE FROM blocks WHERE blocker_id = ?").param(id).update()
     }
 
     private fun ResultSet.toPlayer() = Player(getString("id"), getString("name"), getString("push_token"))
