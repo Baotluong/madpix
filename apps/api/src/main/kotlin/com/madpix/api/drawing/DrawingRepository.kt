@@ -15,13 +15,24 @@ data class DrawingRow(
     val createdBy: String,
     val createdAt: Instant,
     val finishedAt: Instant?,
-)
+    val visibility: Visibility = Visibility.PRIVATE,
+    /** The finished drawing this one is a rematch of. */
+    val rematchOf: String? = null,
+    /** When the current turn began. */
+    val turnStartedAt: Instant = createdAt,
+) {
+    /** Public drawings and rematches give each turn [DrawingService] a time limit. */
+    val timed get() = visibility == Visibility.PUBLIC || rematchOf != null
+}
+
+enum class Visibility { PRIVATE, PUBLIC }
 
 data class SeatRow(
     val drawingId: String,
     val position: Int,
     val playerId: String,
     val playerName: String,
+    val joinedAt: Instant,
     /** JSON list of strokes, once the artist has folded their strip. */
     val strokes: String?,
     val submittedAt: Instant?,
@@ -33,10 +44,14 @@ class DrawingRepository(private val jdbc: JdbcClient) {
     fun insert(d: DrawingRow) {
         jdbc.sql(
             """
-            INSERT INTO drawings (id, invite_code, artist_count, strip_h, prompt, created_by, created_at)
-            VALUES (:id, :code, :artists, :stripH, :prompt, :createdBy, :createdAt)
+            INSERT INTO drawings (id, invite_code, artist_count, strip_h, prompt, created_by, created_at,
+                                  visibility, rematch_of, turn_started_at)
+            VALUES (:id, :code, :artists, :stripH, :prompt, :createdBy, :createdAt,
+                    :visibility, :rematchOf, :createdAt)
             """,
         )
+            .param("visibility", d.visibility.name.lowercase())
+            .param("rematchOf", d.rematchOf)
             .param("id", d.id)
             .param("code", d.inviteCode)
             .param("artists", d.artistCount)
@@ -188,6 +203,74 @@ class DrawingRepository(private val jdbc: JdbcClient) {
         jdbc.sql("UPDATE drawings SET invite_code = NULL WHERE id = ?").param(drawingId).update()
     }
 
+    fun startTurn(drawingId: String, now: Instant) {
+        jdbc.sql("UPDATE drawings SET turn_started_at = ? WHERE id = ?").params(now.toString(), drawingId).update()
+    }
+
+    /**
+     * The oldest public drawing [playerId] could draw in right now: a spot is open, everyone in it
+     * has folded (so it's the new artist's turn at once), nobody has reported it, and nobody in it
+     * blocked [playerId] or was blocked by them.
+     */
+    fun findPlayable(playerId: String): DrawingRow? =
+        jdbc.sql(
+            """
+            SELECT d.* FROM drawings d
+            WHERE d.visibility = 'public' AND d.finished_at IS NULL
+              AND (SELECT COUNT(*) FROM seats s WHERE s.drawing_id = d.id) < d.artist_count
+              AND NOT EXISTS (
+                SELECT 1 FROM seats s
+                WHERE s.drawing_id = d.id AND (s.submitted_at IS NULL OR s.player_id = :me))
+              AND NOT EXISTS (SELECT 1 FROM reports r WHERE r.drawing_id = d.id)
+              AND NOT EXISTS (
+                SELECT 1 FROM seats s JOIN blocks b
+                  ON (b.blocker_id = :me AND b.blocked_id = s.player_id)
+                  OR (b.blocked_id = :me AND b.blocker_id = s.player_id)
+                WHERE s.drawing_id = d.id)
+            ORDER BY d.created_at
+            LIMIT 1
+            """,
+        )
+            .param("me", playerId)
+            .query { rs, _ -> rs.toDrawing() }.optional().orElse(null)
+
+    /** Unfinished public drawings and rematches: the ones whose turns can run out. */
+    fun findTimedOpen(): List<DrawingRow> =
+        jdbc.sql(
+            """
+            SELECT * FROM drawings
+            WHERE finished_at IS NULL AND (visibility = 'public' OR rematch_of IS NOT NULL)
+            """,
+        ).query { rs, _ -> rs.toDrawing() }.list()
+
+    fun findRematch(drawingId: String): DrawingRow? =
+        jdbc.sql("SELECT * FROM drawings WHERE rematch_of = ?").param(drawingId)
+            .query { rs, _ -> rs.toDrawing() }.optional().orElse(null)
+
+    fun insertBlock(blockerId: String, blockedId: String, now: Instant) {
+        jdbc.sql("INSERT OR IGNORE INTO blocks (blocker_id, blocked_id, created_at) VALUES (?, ?, ?)")
+            .params(blockerId, blockedId, now.toString())
+            .update()
+    }
+
+    /** Everyone [playerId] blocked or was blocked by. */
+    fun blockedEitherWay(playerId: String): Set<String> =
+        jdbc.sql(
+            """
+            SELECT blocked_id FROM blocks WHERE blocker_id = :me
+            UNION SELECT blocker_id FROM blocks WHERE blocked_id = :me
+            """,
+        ).param("me", playerId).query(String::class.java).list().filterNotNull().toSet()
+
+    /** Players who used "Delete my data", among [playerIds]. */
+    fun deletedPlayers(playerIds: Collection<String>): Set<String> =
+        if (playerIds.isEmpty()) {
+            emptySet()
+        } else {
+            jdbc.sql("SELECT id FROM players WHERE id IN (:ids) AND deleted_at IS NOT NULL")
+                .param("ids", playerIds).query(String::class.java).list().filterNotNull().toSet()
+        }
+
     fun finish(drawingId: String, now: Instant) {
         jdbc.sql("UPDATE drawings SET finished_at = ? WHERE id = ?").params(now.toString(), drawingId).update()
     }
@@ -201,6 +284,9 @@ class DrawingRepository(private val jdbc: JdbcClient) {
         createdBy = getString("created_by"),
         createdAt = Instant.parse(getString("created_at")),
         finishedAt = getString("finished_at")?.let(Instant::parse),
+        visibility = Visibility.valueOf(getString("visibility").uppercase()),
+        rematchOf = getString("rematch_of"),
+        turnStartedAt = Instant.parse(getString("turn_started_at") ?: getString("created_at")),
     )
 
     private fun ResultSet.toSeat() = SeatRow(
@@ -208,6 +294,7 @@ class DrawingRepository(private val jdbc: JdbcClient) {
         position = getInt("position"),
         playerId = getString("player_id"),
         playerName = getString("player_name"),
+        joinedAt = Instant.parse(getString("joined_at")),
         strokes = getString("strokes"),
         submittedAt = getString("submitted_at")?.let(Instant::parse),
     )

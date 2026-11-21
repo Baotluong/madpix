@@ -15,6 +15,8 @@ data class ArtistView(
 /** A drawing as one player sees it. Only ever holds what that player is allowed to see. */
 data class DrawingView(
     val id: String,
+    /** Public drawings can be joined by anyone through "Play now". */
+    val visibility: Visibility,
     /** Null once every spot is taken. */
     val inviteCode: String?,
     val artistCount: Int,
@@ -32,6 +34,10 @@ data class DrawingView(
     val sliver: List<Stroke>?,
     /** Only once finished: every strip, top to bottom. */
     val strips: List<List<Stroke>>?,
+    /** Public drawings and rematches: when the current artist loses their spot if they haven't folded. */
+    val turnEndsAt: Instant?,
+    /** Set on a rematch: the drawing it came from. */
+    val rematchOf: String?,
     val createdAt: Instant,
     val finishedAt: Instant?,
 ) {

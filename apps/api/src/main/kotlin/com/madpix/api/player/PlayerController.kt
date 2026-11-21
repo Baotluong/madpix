@@ -1,5 +1,7 @@
 package com.madpix.api.player
 
+import com.madpix.api.common.WordFilter
+import com.madpix.api.common.badRequest
 import com.madpix.api.drawing.DrawingService
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -46,7 +48,7 @@ class PlayerController(
     fun create(@Valid @RequestBody body: NewPlayer): NewPlayerResponse {
         val id = UUID.randomUUID().toString()
         val token = Tokens.newToken()
-        val name = body.name.trim()
+        val name = checkName(body.name)
         players.create(id, Tokens.hash(token), name, clock.instant())
         return NewPlayerResponse(PlayerView(id, name), token)
     }
@@ -68,7 +70,15 @@ class PlayerController(
 
     @PatchMapping("/me")
     fun update(@CurrentPlayer me: Player, @Valid @RequestBody body: PlayerUpdate): PlayerView {
-        players.update(me.id, body.name?.trim()?.ifEmpty { null }, body.pushToken)
+        players.update(me.id, body.name?.let(::checkName), body.pushToken)
         return PlayerView(players.findById(me.id)!!)
+    }
+
+    /** Names are seen by strangers in public drawings. */
+    private fun checkName(raw: String): String {
+        val name = raw.trim()
+        if (name.isEmpty()) badRequest("Pick a name first")
+        if (!WordFilter.allowed(name)) badRequest("That name isn't allowed. Try another one.")
+        return name
     }
 }

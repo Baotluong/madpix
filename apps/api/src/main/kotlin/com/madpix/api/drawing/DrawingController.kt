@@ -21,7 +21,14 @@ class DrawingController(private val service: DrawingService) {
     data class NewDrawing(
         @field:Min(2) @field:Max(4) val artistCount: Int,
         @field:Size(max = 30) val prompt: String? = null,
+        /** Public drawings can be joined by anyone through "Play now". */
+        val public: Boolean = false,
     )
+
+    /** For "Play now" and rematches: an inspo word the app picked, used if the new drawing gets one. */
+    data class PromptRequest(@field:Size(max = 30) val prompt: String? = null)
+
+    data class BlockRequest(@field:Min(0) @field:Max(3) val position: Int)
 
     data class JoinRequest(@field:NotBlank @field:Size(max = 20) val code: String)
 
@@ -32,7 +39,20 @@ class DrawingController(private val service: DrawingService) {
     @PostMapping("/drawings")
     @ResponseStatus(HttpStatus.CREATED)
     fun create(@CurrentPlayer me: Player, @Valid @RequestBody body: NewDrawing) =
-        service.create(me, body.artistCount, body.prompt)
+        service.create(me, body.artistCount, body.prompt, body.public)
+
+    @PostMapping("/drawings/play-now")
+    fun playNow(@CurrentPlayer me: Player, @Valid @RequestBody body: PromptRequest?) =
+        service.playNow(me, body?.prompt)
+
+    @PostMapping("/drawings/{id}/rematch")
+    fun rematch(@CurrentPlayer me: Player, @PathVariable id: String, @Valid @RequestBody body: PromptRequest?) =
+        service.rematch(me, id, body?.prompt)
+
+    @PostMapping("/drawings/{id}/block")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun block(@CurrentPlayer me: Player, @PathVariable id: String, @Valid @RequestBody body: BlockRequest) =
+        service.block(me, id, body.position)
 
     @GetMapping("/drawings")
     fun list(@CurrentPlayer me: Player) = service.list(me)

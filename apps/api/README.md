@@ -33,12 +33,15 @@ never reaches their phone.
 | `POST` | `/players` | New anonymous player → `{ player, token }` |
 | `GET` / `PATCH` | `/players/me` | Read, or change name / Expo push token |
 | `DELETE` | `/players/me` | "Delete my data": leave unfinished drawings, wipe name, push token and login |
-| `POST` | `/drawings` | Start a drawing (`artistCount` 2–4, optional `prompt`) |
+| `POST` | `/drawings` | Start a drawing (`artistCount` 2–4, optional `prompt`, `public`) |
+| `POST` | `/drawings/play-now` | A spot in a public drawing where it's my turn now, or a new public drawing |
 | `GET` | `/drawings` | My drawings, most recent first |
 | `GET` | `/drawings/{id}` | One drawing, as I'm allowed to see it |
 | `POST` | `/drawings/join` | Join with `{ code }` |
 | `POST` | `/drawings/{id}/strip` | Fold my strip: `{ strokes }` |
 | `POST` | `/drawings/{id}/report` | Flag a drawing I'm in (`{ reason }` optional); logged as a warning |
+| `POST` | `/drawings/{id}/block` | Never share a public drawing or rematch with the artist at `{ position }` again |
+| `POST` | `/drawings/{id}/rematch` | "Draw again": one new private drawing with the same artists, asker first |
 | `GET` | `/invites/{code}` | Peek at a drawing before joining |
 | `GET` | `/healthz` | Health check |
 
@@ -72,9 +75,9 @@ Errors are RFC 9457 problem details, e.g. `{"status": 409, "detail": "It's not y
 | Path | What |
 |---|---|
 | `admin/` | Moderation routes (`ADMIN_TOKEN`), used by `admin.sh` |
-| `common/` | Errors, CORS, and `AbuseFilter` (rate limits, body size) |
+| `common/` | Errors, CORS, `AbuseFilter` (rate limits, body size), `WordFilter` (names, inspo) |
 | `player/` | Anonymous players, token auth (`@CurrentPlayer`) |
-| `drawing/` | Rules (`DrawingService`), SQL (`DrawingRepository`), sliver cutting, validation |
+| `drawing/` | Rules (`DrawingService`), SQL (`DrawingRepository`), sliver cutting, validation, turn time limits |
 | `push/` | Expo push sender; notifications go out after the transaction commits |
 | `resources/db/migration/` | Flyway migrations (SQLite) |
 
@@ -94,3 +97,15 @@ from scratch instead, and that first request waits about 15 seconds.
 
 SQLite allows one writer, so the app runs on a single machine with one database
 connection. That also makes joining and folding strictly one-at-a-time.
+
+## Public drawings
+
+"Play now" (`POST /drawings/play-now`) hands out the oldest public drawing where every artist so far
+has folded, so the new artist can draw at once. Drawings that were reported, or that hold someone
+the player blocked (or was blocked by), are skipped. If there's nothing to join, or 20% of the time
+anyway (`madpix.play-now.create-chance`), it starts a new public drawing: 2 artists half the time,
+3 about a third, 4 the rest, with an inspo word 85% of the time.
+
+In public drawings and rematches, each turn has 12 hours (`madpix.turn-timeout`). After that the
+artist loses their spot, later artists move up, and the spot opens for "Play now" or the invite
+code. Private drawings with friends have no limit.
