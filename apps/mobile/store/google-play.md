@@ -87,6 +87,10 @@ types" if Game doesn't fit the options shown).
 | Controlled substances (drugs, alcohol, tobacco) | No |
 | Gambling or simulated gambling | No |
 | Can users interact or exchange content with each other? | **Yes.** Players in a drawing see each other's chosen names and drawings. |
+| Can users block users or user-generated content? | **Yes** (since public games: Block on any online drawing) |
+| Can users report users or user-generated content? | **Yes** (Report on any online drawing) |
+| Chat moderation? | **No.** There's no chat. |
+| Can interactions be limited to invited friends only? | **No** (since public games: Play now puts strangers together) |
 | Does the app share the user's current location with other users? | No |
 | Can users buy digital goods? | No |
 | Is the app a web browser or search engine? | No |
