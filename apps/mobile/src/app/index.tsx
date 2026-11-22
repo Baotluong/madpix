@@ -8,9 +8,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { IntroCard } from '@/components/mode-intro';
 import { NameChip } from '@/components/name-chip';
+import { needsMe, NeedsYou } from '@/components/needs-you';
 import { randomPrompt } from '@/game/prompts';
 import { markIntroSeen, useGameStore } from '@/game/store';
 import { notify } from '@/lib/confirm';
+import type { DrawingView } from '@/remote/api';
 import { api, ensurePlayer, usePlayer } from '@/remote/session';
 import { colors } from '@/theme';
 
@@ -41,18 +43,18 @@ export default function Home() {
     }
   };
   const onPlayNow = () => (playIntroSeen ? playNow() : setPlayIntro(true));
-  // Friend drawings waiting on me: my turn, or finished and not unfolded yet.
-  const [needsMe, setNeedsMe] = useState(0);
+  // Online drawings waiting on me: my turn, or finished and not unfolded yet.
+  const [waiting, setWaiting] = useState<DrawingView[]>([]);
   useFocusEffect(
     useCallback(() => {
-      if (!session) return;
+      if (!session) {
+        setWaiting([]);
+        return;
+      }
       let live = true;
       api
         .myDrawings()
-        .then((ds) => {
-          const n = ds.filter((d) => d.myTurn || (d.status === 'FINISHED' && !seen.includes(d.id))).length;
-          if (live) setNeedsMe(n);
-        })
+        .then((ds) => live && setWaiting(ds.filter((d) => needsMe(d, seen))))
         .catch(() => {});
       return () => {
         live = false;
@@ -63,9 +65,15 @@ export default function Home() {
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.hero}>
-        <Text style={styles.title}>MadPix</Text>
-        <Image source={require('@/assets/images/elephant.png')} style={styles.elephant} contentFit="contain" />
-        <Text style={styles.tagline}>Fold the page. Draw your part. Unfold something mad.</Text>
+        <Text style={[styles.title, waiting.length > 0 && styles.titleSmall]}>MadPix</Text>
+        {waiting.length > 0 ? (
+          <NeedsYou drawings={waiting} />
+        ) : (
+          <>
+            <Image source={require('@/assets/images/elephant.png')} style={styles.elephant} contentFit="contain" />
+            <Text style={styles.tagline}>Fold the page. Draw your part. Unfold something mad.</Text>
+          </>
+        )}
       </SafeAreaView>
 
       <SafeAreaView edges={['top', 'bottom', 'right']} style={styles.actions}>
@@ -77,7 +85,7 @@ export default function Home() {
           disabled={finding}
         />
         <Button
-          label={needsMe ? `Send around (${needsMe} waiting on you)` : 'Send around'}
+          label="Send around"
           sublabel="Online, friends"
           variant="secondary"
           onPress={() => router.push('/friends')}
@@ -123,6 +131,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   title: { fontSize: 52, fontWeight: '900', color: colors.card, fontStyle: 'italic', letterSpacing: -1 },
+  titleSmall: { fontSize: 34 },
   elephant: { width: 260, height: 120 },
   tagline: { fontSize: 17, color: colors.card, textAlign: 'center', lineHeight: 24 },
   actions: { flex: 2, justifyContent: 'center', padding: 24, gap: 10, maxWidth: 420 },

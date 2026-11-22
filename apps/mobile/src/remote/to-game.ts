@@ -17,14 +17,22 @@ export function toGame(view: DrawingView): Game {
       }));
   return {
     id: view.id,
-    createdAt: Date.parse(view.createdAt),
-    finishedAt: view.finishedAt ? Date.parse(view.finishedAt) : undefined,
+    createdAt: parseTime(view.createdAt),
+    finishedAt: view.finishedAt ? parseTime(view.finishedAt) : undefined,
     stripH: view.stripH,
     artists,
     prompt: view.prompt,
     sections,
     draft: [],
   };
+}
+
+/**
+ * Milliseconds for an API time. The API sends nanoseconds ("...26.093086817Z"), and Hermes isn't
+ * guaranteed to parse more than three decimals, so they're cut to milliseconds first.
+ */
+export function parseTime(iso: string): number {
+  return Date.parse(iso.replace(/(\.\d{3})\d+/, '$1'));
 }
 
 /** One line on where a drawing stands, from my point of view. */
@@ -36,9 +44,15 @@ export function statusLine(view: DrawingView): string {
   return `${next.name}'s turn`;
 }
 
+/** Time left until [iso], short: "9h left", "40m left". */
+export function timeLeft(iso: string): string {
+  const minutes = Math.max(0, Math.round((parseTime(iso) - Date.now()) / 60000));
+  return minutes >= 60 ? `${Math.floor(minutes / 60)}h left` : `${minutes}m left`;
+}
+
 /** When a timed turn runs out, in words: "3:40 PM", or "Sat 3:40 PM" if it's not today. */
 export function untilLabel(iso: string): string {
-  const d = new Date(iso);
+  const d = new Date(parseTime(iso));
   const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   if (d.toDateString() === new Date().toDateString()) return time;
   return `${d.toLocaleDateString([], { weekday: 'short' })} ${time}`;

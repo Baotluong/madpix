@@ -124,6 +124,9 @@ export function saveRemoteToGallery(game: Game) {
   setState({ ...state, gallery, seenRemote: [...state.seenRemote, game.id] });
 }
 
+/** Whether this remote drawing was already unfolded on this device. */
+export const isRemoteSeen = (id: string) => state.seenRemote.includes(id);
+
 export function markIntroSeen(key: string) {
   if (!state.seenIntros.includes(key)) setState({ ...state, seenIntros: [...state.seenIntros, key] });
 }

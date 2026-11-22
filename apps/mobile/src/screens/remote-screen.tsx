@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlockButton } from '@/components/block-button';
 import { Button } from '@/components/button';
 import { CoverScreen } from '@/components/cover-screen';
+import { MyStripButton } from '@/components/strip-preview';
 import { ShareImageButton } from '@/components/share-image-button';
 import type { Stroke } from '@/game/types';
 import type { DrawingView } from '@/remote/api';
@@ -15,7 +16,7 @@ import { clearDraft, loadDraft, saveDraft } from '@/remote/drafts';
 import { INVITE_LABEL, shareInvite } from '@/remote/invite';
 import { drawAgain } from '@/remote/rematch';
 import { reportDrawing } from '@/remote/report';
-import { saveRemoteToGallery } from '@/game/store';
+import { isRemoteSeen, saveRemoteToGallery } from '@/game/store';
 import { api, usePlayer } from '@/remote/session';
 import { toGame, untilLabel } from '@/remote/to-game';
 import { colors } from '@/theme';
@@ -34,7 +35,6 @@ export default function RemoteScreen() {
   const [error, setError] = useState<string | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [draft, setDraft] = useState<Stroke[] | null>(null);
-  // Unfold strip by strip only if the page finished while this screen was open.
   const [justFinished, setJustFinished] = useState(false);
   const [rematching, setRematching] = useState(false);
 
@@ -42,7 +42,10 @@ export default function RemoteScreen() {
     try {
       const next = await api.drawing(id);
       setView((prev) => {
-        if (prev && prev.status !== 'FINISHED' && next.status === 'FINISHED') setJustFinished(true);
+        // Unfold strip by strip when the page finishes while open here, or the first time a
+        // finished page is opened on this device (from Needs you, say).
+        const unfolding = prev ? prev.status !== 'FINISHED' : !isRemoteSeen(id);
+        if (unfolding && next.status === 'FINISHED') setJustFinished(true);
         return next;
       });
       setError(null);
@@ -240,6 +243,7 @@ export default function RemoteScreen() {
         <View style={styles.row}>
           <Button label="Back" variant="ghost" onPress={() => router.back()} />
           <Button label="Refresh" variant="ghost" onPress={load} />
+          {view.myStrip && <MyStripButton strokes={view.myStrip} unitsH={view.stripH} />}
           <Button label="Report" variant="ghost" onPress={() => reportDrawing(id)} />
           <BlockButton drawingId={id} artists={view.artists} />
         </View>
