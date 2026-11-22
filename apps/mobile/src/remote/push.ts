@@ -37,7 +37,7 @@ if (pushSupported) {
 /**
  * Registers this phone for notifications. With [ask], shows the system prompt if we haven't
  * asked before; without it, only refreshes the token when permission was already given.
- * Failures are quiet: the app still works, and Needs you shows what's waiting.
+ * Failures are quiet: the app still works, and Your move on the home screen shows what's waiting.
  */
 export async function enablePush({ ask }: { ask: boolean }) {
   if (!pushSupported) return;

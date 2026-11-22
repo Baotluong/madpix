@@ -12,7 +12,7 @@ What's planned after the current release, roughly in order. Ideas, not promises.
 3. **See my own strip again** after I've drawn it.
 4. **Push notifications.** "It's your turn" and "Your drawing is finished". Needs a free Firebase
    project and a new build.
-5. **"Needs you" section.** Drawings waiting on me to draw, and finished ones waiting for their
+5. **"Your move" section.** Drawings waiting on me to draw, and finished ones waiting for their
    reveal, at the top. Everything else below.
 6. **expo-updates,** so JavaScript-only fixes reach testers without a new build.
 7. **Release:** one EAS build, then update the content rating answers for public games and the

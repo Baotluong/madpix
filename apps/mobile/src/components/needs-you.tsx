@@ -14,7 +14,7 @@ export const needsMe = (d: DrawingView, seen: string[]) =>
   d.myTurn || (d.status === 'FINISHED' && !seen.includes(d.id));
 
 /**
- * The home screen's "Needs you" cards: one tap to draw your turn or unfold a finished page.
+ * The home screen's "Your move" cards: one tap to draw your turn or unfold a finished page.
  * Turns first (the ones running out soonest first), then finished pages.
  */
 export function NeedsYou({ drawings }: { drawings: DrawingView[] }) {
@@ -23,7 +23,7 @@ export function NeedsYou({ drawings }: { drawings: DrawingView[] }) {
   const more = sorted.length - shown.length;
   return (
     <View style={styles.block}>
-      <Text style={styles.heading}>Needs you</Text>
+      <Text style={styles.heading}>Your move</Text>
       <View style={styles.row}>
         {shown.map((d) => (
           <Card key={d.id} view={d} />

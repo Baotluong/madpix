@@ -44,7 +44,7 @@ export default function RemoteScreen() {
       const next = await api.drawing(id);
       setView((prev) => {
         // Unfold strip by strip when the page finishes while open here, or the first time a
-        // finished page is opened on this device (from Needs you, say).
+        // finished page is opened on this device (from Your move, say).
         const unfolding = prev ? prev.status !== 'FINISHED' : !isRemoteSeen(id);
         if (unfolding && next.status === 'FINISHED') setJustFinished(true);
         return next;
