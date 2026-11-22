@@ -2,7 +2,8 @@ import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -26,6 +27,8 @@ export default function Home() {
   const seen = useGameStore((s) => s.seenRemote);
   const playIntroSeen = useGameStore((s) => s.seenIntros.includes('play'));
   const { session } = usePlayer();
+  // The elephant stays put when the cards show up under it; it only shrinks on short screens.
+  const elephantH = Math.min(120, Math.round(useWindowDimensions().height * 0.24));
   const [finding, setFinding] = useState(false);
   const [playIntro, setPlayIntro] = useState(false);
 
@@ -65,14 +68,19 @@ export default function Home() {
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.hero}>
-        <Text style={[styles.title, waiting.length > 0 && styles.titleSmall]}>MadPix</Text>
+        <Text style={styles.title}>MadPix</Text>
+        <Image
+          source={require('@/assets/images/elephant.png')}
+          style={{ width: elephantH * (260 / 120), height: elephantH }}
+          contentFit="contain"
+        />
+        {/* Online drawings load a moment after the screen, so the cards fade in where the tagline was. */}
         {waiting.length > 0 ? (
-          <NeedsYou drawings={waiting} />
+          <Animated.View key="waiting" entering={FadeIn.duration(250)} style={styles.below}>
+            <NeedsYou drawings={waiting} />
+          </Animated.View>
         ) : (
-          <>
-            <Image source={require('@/assets/images/elephant.png')} style={styles.elephant} contentFit="contain" />
-            <Text style={styles.tagline}>Fold the page. Draw your part. Unfold something mad.</Text>
-          </>
+          <Text style={styles.tagline}>Fold the page. Draw your part. Unfold something mad.</Text>
         )}
       </SafeAreaView>
 
@@ -131,8 +139,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   title: { fontSize: 52, fontWeight: '900', color: colors.card, fontStyle: 'italic', letterSpacing: -1 },
-  titleSmall: { fontSize: 34 },
-  elephant: { width: 260, height: 120 },
+  below: { alignSelf: 'stretch' },
   tagline: { fontSize: 17, color: colors.card, textAlign: 'center', lineHeight: 24 },
   actions: { flex: 2, justifyContent: 'center', padding: 24, gap: 10, maxWidth: 420 },
   build: { position: 'absolute', right: 12, bottom: 8, fontSize: 11, color: colors.muted, opacity: 0.7 },
