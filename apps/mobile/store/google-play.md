@@ -28,21 +28,24 @@ MadPix is a drawing game for friends, based on the old fold-the-paper game exqui
 
 Each artist draws one strip of the picture. You only see a thin sliver of the strip before yours, so you have to guess what's going on and keep it going. When the last artist finishes, the page unfolds and everyone sees the mashup you made together.
 
-TWO WAYS TO PLAY
-• Send around: everyone draws on their own phone, whenever they're free. Start a drawing, share the invite code and take turns. Friends without the app can join from a web browser.
+THREE WAYS TO PLAY
+• Play now: jump into a drawing with other MadPix players. No code, no waiting: it's usually your turn right away.
+• Send around: draw with friends, each on your own phone, whenever you're free. Share the invite code and take turns. Friends without the app can join from a web browser.
 • Pass around: one phone, passed around the room. Good for parties, road trips and waiting rooms.
 
 FEATURES
 • 2 to 4 artists per drawing
 • An optional "inspo" word, the same for everyone, if you want a theme
 • Simple brushes, colors, eraser, undo and redo
+• Watch the finished page unfold and redraw itself, line by line
+• Get a notification when it's your turn
 • Save or share finished drawings as an image
 • No account, no sign-in, no ads
 
 PRIVACY
 MadPix doesn't ask for your name, email or phone number. Pass around drawings never leave your phone. Send around keeps only what it needs to pass drawings between friends, and you can delete it from the app anytime.
 
-Be kind: hateful, sexual or violent drawings and names aren't allowed, and anyone in a drawing can report it.
+Be kind: hateful, sexual or violent drawings and names aren't allowed. Anyone in a drawing can report it or block an artist.
 ```
 
 **Graphics**
