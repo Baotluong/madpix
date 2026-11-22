@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1088435146778",
+    "project_id": "madpix-308b4",
+    "storage_bucket": "madpix-308b4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088435146778:android:ed90368a03161e6012c1a3",
+        "android_client_info": {
+          "package_name": "com.madpixdev.madpix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1UOxxiC7Ok5b2js9ZjSVnSueMsBjKdgY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
