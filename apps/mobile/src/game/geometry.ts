@@ -16,7 +16,7 @@ const LEGACY_STRIP_H = 1000;
 export const stripHeight = (game: Game) => game.stripH ?? LEGACY_STRIP_H;
 
 /** How much of the previous strip the next artist can see (fraction of its height). */
-export const SLIVER = 0.1;
+export const SLIVER = 0.15;
 
 export const MIN_ARTISTS = 2;
 export const MAX_ARTISTS = 4;

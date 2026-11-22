@@ -107,7 +107,7 @@ class DrawingFlowTest(
         assertEquals("#1B1B1B", sliver[0]["color"].asString())
         val points = sliver[0]["points"]
         val ys = (1 until points.size() step 2).map { points[it].asDouble() }
-        assertTrue(ys.all { it >= 447.0 }, "sliver points are all in the band: $ys")
+        assertTrue(ys.all { it >= 422.0 }, "sliver points are all in the band: $ys")
 
         // Bao can't go again; Sam folds the last strip and the page is finished.
         call(bao, POST, "/drawings/$id/strip", mapOf("strokes" to emptyList<Any>()))

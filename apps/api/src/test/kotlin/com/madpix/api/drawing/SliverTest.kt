@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SliverTest {
-    // Strip height 500 → the sliver band starts at y = 450.
+    // Strip height 500 → the sliver band starts at y = 425.
     private val stripH = 500
     private fun stroke(vararg points: Double, width: Double = 2.0) = Stroke("#000000", width, points.toList())
 
@@ -22,9 +22,9 @@ class SliverTest {
 
     @Test
     fun `a stroke entering the band starts at the cut line, not at the hidden point`() {
-        // From (0, 0) straight down to (100, 500). Cut is at 450 - width/2 = 449.
+        // From (0, 0) straight down to (100, 500). Cut is at 425 - width/2 = 424.
         val clipped = sliverOf(listOf(stroke(0.0, 0.0, 100.0, 500.0)), stripH).single()
-        assertEquals(listOf(89.8, 449.0, 100.0, 500.0), clipped.points.map { Math.round(it * 10) / 10.0 })
+        assertEquals(listOf(84.8, 424.0, 100.0, 500.0), clipped.points.map { Math.round(it * 10) / 10.0 })
     }
 
     @Test
@@ -32,13 +32,13 @@ class SliverTest {
         val s = stroke(0.0, 480.0, 50.0, 100.0, 100.0, 480.0)
         val parts = sliverOf(listOf(s), stripH)
         assertEquals(2, parts.size)
-        assertTrue(parts.all { p -> p.points.chunked(2).all { it[1] >= 449.0 } })
+        assertTrue(parts.all { p -> p.points.chunked(2).all { it[1] >= 424.0 } })
     }
 
     @Test
     fun `thick pens count from the edge of their ink`() {
         // Centre is 20 above the band, but a 60-wide pen reaches 30 below its centre.
-        val s = stroke(10.0, 430.0, width = 60.0)
+        val s = stroke(10.0, 405.0, width = 60.0)
         assertEquals(listOf(s), sliverOf(listOf(s), stripH))
     }
 

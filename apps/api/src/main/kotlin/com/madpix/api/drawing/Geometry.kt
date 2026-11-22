@@ -6,7 +6,7 @@ object Geometry {
     const val STRIP_H = 500
 
     /** The share of the previous strip (its bottom edge) the next artist sees. */
-    const val SLIVER = 0.1
+    const val SLIVER = 0.15
 
     const val MIN_ARTISTS = 2
     const val MAX_ARTISTS = 4
