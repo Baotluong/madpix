@@ -2,7 +2,7 @@
 
 What's planned after the current release, roughly in order. Ideas, not promises.
 
-## Next after public games
+## 0.3.0 (next Play build)
 
 1. **Inspo list pass.** Grow it, and favor things that read top to bottom, so each artist gets a
    natural slice (head, body, legs): giraffe, snowman, wizard, lighthouse, mermaid, knight, robot,
@@ -14,8 +14,14 @@ What's planned after the current release, roughly in order. Ideas, not promises.
    project and a new build.
 5. **"Needs you" section.** Drawings waiting on me to draw, and finished ones waiting for their
    reveal, at the top. Everything else below.
-6. **Player icons** (low priority). Cute little critters, picked from a small set.
-7. **Best-of gallery.** A place to see other people's finished drawings. Open questions: keeping
+6. **expo-updates,** so JavaScript-only fixes reach testers without a new build.
+7. **Release:** one EAS build, then update the content rating answers for public games and the
+   store description before sending it to closed testing.
+
+## 0.4.0
+
+1. **Player icons.** Cute little critters, picked from a small set.
+2. **Best-of gallery.** A place to see other people's finished drawings. Open questions: keeping
    lewd drawings out (only public drawings, only after a delay with no reports, maybe admin
    approval at first) and finding the "best" (likes from players, ranked by recent likes).
 
