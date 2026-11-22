@@ -12,7 +12,7 @@ npx expo start     # press w for web, or scan the QR code with Expo Go on Androi
 Checks: `npm run typecheck` and `npx eslint src`.
 
 **Which code is on my phone?** The home screen shows a build stamp in the bottom corner, like
-`0.1.0 · 095eb16`. It's the commit the dev server started from (`+` means uncommitted changes),
+`0.2.0 · 5d73294`. It's the commit the dev server started from (`+` means uncommitted changes),
 set in `app.config.js`. Restart with `npx expo start --clear` after committing to update it.
 
 ## Remote play (v1)
