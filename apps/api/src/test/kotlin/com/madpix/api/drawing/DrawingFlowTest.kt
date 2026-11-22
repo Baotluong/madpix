@@ -87,6 +87,7 @@ class DrawingFlowTest(
             .andExpect { status { isOk() } }.json()
         assertFalse(afterBao["myTurn"].asBoolean())
         assertTrue(afterBao["waitingForArtist"].asBoolean(), "nobody has spot 2 yet")
+        assertEquals(2, afterBao["myStrip"].size(), "Bao can look at his own strip again")
 
         // Sam previews the invite (codes ignore case and spaces), then joins: it's their turn.
         val typed = code.uppercase().replace(Regex("([0-9]+)"), " $1")
@@ -98,6 +99,7 @@ class DrawingFlowTest(
         assertTrue(joined["myTurn"].asBoolean())
         assertEquals(1, joined["myPosition"].asInt())
         assertTrue(joined["strips"].isNull, "no strips until the end")
+        assertTrue(joined["myStrip"].isNull, "Sam hasn't drawn, and never sees Bao's strip")
 
         // Sam's sliver holds only the bottom of the edge stroke, cut at the band.
         val sliver = joined["sliver"]

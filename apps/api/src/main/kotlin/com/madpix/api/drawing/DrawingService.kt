@@ -355,6 +355,7 @@ class DrawingService(
                 null
             },
             strips = if (withStrokes && finished) seats.map(::strokesOf) else null,
+            myStrip = if (withStrokes && !finished && mine.submittedAt != null) strokesOf(mine) else null,
             turnEndsAt = if (d.timed && !finished && current != null) turnStart(d, current) + turnTimeout else null,
             rematchOf = d.rematchOf,
             createdAt = d.createdAt,

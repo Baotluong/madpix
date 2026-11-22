@@ -60,6 +60,8 @@ export type DrawingView = {
   sliver: Stroke[] | null;
   /** Only once finished. */
   strips: Stroke[][] | null;
+  /** My own strip, once I've folded it, until the drawing is finished. */
+  myStrip: Stroke[] | null;
   /** Public drawings and rematches: when the current artist loses their spot if they haven't folded. */
   turnEndsAt: string | null;
   /** Set on a rematch: the drawing it came from. */

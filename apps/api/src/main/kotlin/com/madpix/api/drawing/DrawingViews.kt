@@ -34,6 +34,8 @@ data class DrawingView(
     val sliver: List<Stroke>?,
     /** Only once finished: every strip, top to bottom. */
     val strips: List<List<Stroke>>?,
+    /** My own strip, once I've folded it and until the drawing is finished (then it's in [strips]). */
+    val myStrip: List<Stroke>?,
     /** Public drawings and rematches: when the current artist loses their spot if they haven't folded. */
     val turnEndsAt: Instant?,
     /** Set on a rematch: the drawing it came from. */
