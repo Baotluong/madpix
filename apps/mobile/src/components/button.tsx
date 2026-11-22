@@ -45,6 +45,6 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: colors.brandDark },
   secondary: { backgroundColor: colors.card, borderWidth: 2, borderColor: colors.brandDark },
   ghost: { backgroundColor: 'transparent' },
-  text: { fontSize: 17, fontWeight: '700', color: colors.card },
+  text: { fontSize: 17, fontWeight: '700', color: colors.card, textAlign: 'center' },
   sub: { fontSize: 11, fontWeight: '500', opacity: 0.75, textAlign: 'center' },
 });

@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,11 @@ import { UnfoldingPage, unfoldSchedule } from '@/drawing/unfolding-page';
 import { STRIP_W, stripHeight } from '@/game/geometry';
 import type { Game } from '@/game/types';
 import { colors } from '@/theme';
+
+const PADDING = 16;
+const GAP = 24;
+/** The narrowest the details column gets, so its buttons never slide under the page. */
+const SIDE_MIN = 220;
 
 /**
  * The unfolded page on the left, details and [actions] on the right. Tapping the page opens it
@@ -19,44 +24,55 @@ export function RevealView({ game, animate, children }: { game: Game; animate: b
   const insets = useSafeAreaInsets();
   const n = game.sections.length;
   const unitsH = stripHeight(game);
-  // Fit the whole page to the screen height so everyone sees it at once.
+  // The space the page and details share, measured once laid out (camera cutouts and nav bars
+  // vary by phone); estimated from the window until then.
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const boxW = box?.w ?? W - insets.left - insets.right - PADDING * 2;
+  const boxH = box?.h ?? H - insets.top - insets.bottom - PADDING * 2;
+  // Fit the whole page to the height so everyone sees it at once, but always leave the details
+  // column room: nearly square screens (a Fold's cover screen turned sideways) run out of width
+  // first.
   const pageAspect = (unitsH / STRIP_W) * n;
-  const width = Math.floor(
-    Math.min((H - insets.top - insets.bottom - 32) / pageAspect, (W - insets.left - insets.right) * 0.6),
-  );
+  const rowW = boxW - GAP;
+  const width = Math.max(0, Math.floor(Math.min(boxH / pageAspect, rowW - SIDE_MIN, rowW * 0.6)));
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="See the drawing full screen"
-        onPress={() => router.push({ pathname: '/view/[id]', params: { id: game.id } })}
-        style={({ pressed }) => pressed && { opacity: 0.9 }}>
-        <UnfoldingPage game={game} width={width} animate={animate} />
-        <View style={styles.expand} pointerEvents="none">
-          <Ionicons name="expand" size={16} color={colors.card} />
-        </View>
-      </Pressable>
+      <View
+        style={styles.row}
+        onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="See the drawing full screen"
+          onPress={() => router.push({ pathname: '/view/[id]', params: { id: game.id } })}
+          style={({ pressed }) => pressed && { opacity: 0.9 }}>
+          <UnfoldingPage game={game} width={width} animate={animate} />
+          <View style={styles.expand} pointerEvents="none">
+            <Ionicons name="expand" size={16} color={colors.card} />
+          </View>
+        </Pressable>
 
-      <Animated.View entering={animate ? FadeIn.delay(unfoldSchedule(game).total) : undefined} style={styles.side}>
-        <ScrollView contentContainerStyle={styles.sideContent}>
-          {game.prompt && (
-            <Text style={styles.prompt}>
-              Everyone&apos;s inspo was <Text style={styles.promptWord}>{game.prompt}</Text>
-            </Text>
-          )}
-          <Text style={styles.meta}>By {game.artists.join(', ')}</Text>
-          <Text style={styles.metaSmall}>{new Date(game.finishedAt ?? game.createdAt).toLocaleString()}</Text>
-          {children}
-        </ScrollView>
-      </Animated.View>
+        <Animated.View entering={animate ? FadeIn.delay(unfoldSchedule(game).total) : undefined} style={styles.side}>
+          <ScrollView contentContainerStyle={styles.sideContent}>
+            {game.prompt && (
+              <Text style={styles.prompt}>
+                Everyone&apos;s inspo was <Text style={styles.promptWord}>{game.prompt}</Text>
+              </Text>
+            )}
+            <Text style={styles.meta}>By {game.artists.join(', ')}</Text>
+            <Text style={styles.metaSmall}>{new Date(game.finishedAt ?? game.createdAt).toLocaleString()}</Text>
+            {children}
+          </ScrollView>
+        </Animated.View>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24, padding: 16 },
-  side: { flex: 1, maxWidth: 380, alignSelf: 'stretch' },
+  screen: { flex: 1, padding: PADDING },
+  row: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: GAP },
+  side: { flex: 1, minWidth: 0, maxWidth: 380, alignSelf: 'stretch' },
   sideContent: { flexGrow: 1, justifyContent: 'center', gap: 10 },
   prompt: { fontSize: 17, color: colors.muted, textAlign: 'center' },
   promptWord: { fontWeight: '800', color: colors.ink },
