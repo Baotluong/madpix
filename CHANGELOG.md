@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.0 (November 2026)
+
+Second Google Play build. It also brings 0.2.0 (Play now, public drawings, Draw again, blocking,
+the unfold replay) to Play testers for the first time.
+
+- **Your move:** drawings waiting on you show on the home screen under the elephant, your turns
+  first (soonest deadline first), then finished pages waiting to be unfolded. A finished drawing
+  unfolds the first time you open it, even if it finished while you were away.
+- **Notifications:** "It's your turn" and "Your drawing is finished". The app asks after your first
+  online fold; tapping one opens the drawing.
+- **See my strip** again while the others draw.
+- **Bigger sliver:** the next artist sees 15% of the strip above, up from 10%.
+- **Inspo words:** 82 tall subjects that split well top to bottom.
+- **Fixes without a new build:** expo-updates, so JavaScript changes reach phones on next launch.
+- Finished page no longer overlaps the buttons on nearly square screens (Fold cover screens);
+  wrapped button labels are centered; timestamps from the API parse correctly on Android.
+
 ## 0.2.0 (November 2026)
 
 Live on the API and the web (madpix.pages.dev). Not built for Google Play: testers there are on

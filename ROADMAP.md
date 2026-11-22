@@ -2,7 +2,7 @@
 
 What's planned after the current release, roughly in order. Ideas, not promises.
 
-## 0.3.0 (next Play build)
+## 0.3.0 (built November 2026)
 
 1. **Inspo list pass.** Grow it, and favor things that read top to bottom, so each artist gets a
    natural slice (head, body, legs): giraffe, snowman, wizard, lighthouse, mermaid, knight, robot,
