@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { PushHandler } from '@/components/push-handler';
 import { colors } from '@/theme';
 
 export default function RootLayout() {
@@ -33,6 +34,7 @@ export default function RootLayout() {
         <Stack.Screen name="remote/[id]" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="view/[id]" options={{ headerShown: false, animation: 'fade' }} />
       </Stack>
+      <PushHandler />
     </GestureHandlerRootView>
   );
 }

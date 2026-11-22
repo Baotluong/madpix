@@ -38,7 +38,7 @@ export function MyStripButton({ strokes, unitsH }: { strokes: Stroke[]; unitsH: 
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(31,36,48,0.85)',
+    backgroundColor: 'rgba(31,36,48,0.95)',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,

@@ -30,6 +30,13 @@
         }
       ],
       "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#5B8DE6"
+        }
+      ],
       "./plugins/with-android-build-settings"
     ],
     "experiments": {

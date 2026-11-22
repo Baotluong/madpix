@@ -15,6 +15,7 @@ import type { DrawingView } from '@/remote/api';
 import { clearDraft, loadDraft, saveDraft } from '@/remote/drafts';
 import { INVITE_LABEL, shareInvite } from '@/remote/invite';
 import { drawAgain } from '@/remote/rematch';
+import { enablePush } from '@/remote/push';
 import { reportDrawing } from '@/remote/report';
 import { isRemoteSeen, saveRemoteToGallery } from '@/game/store';
 import { api, usePlayer } from '@/remote/session';
@@ -166,6 +167,8 @@ export default function RemoteScreen() {
           onDraft={(strokes) => saveDraft(id, strokes)}
           onDone={async (strokes) => {
             const next = await api.submitStrip(id, strokes);
+            // Now they're waiting on others: the natural moment to offer "tell me when it's my turn".
+            if (next.status !== 'FINISHED') enablePush({ ask: true });
             clearDraft(id);
             setDraft(null);
             setDrawing(false);

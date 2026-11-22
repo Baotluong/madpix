@@ -59,6 +59,14 @@ export function usePlayer() {
   );
 }
 
+/** The session right now, outside React. */
+usePlayer.current = () => state.session;
+
+/** Where the API should send this phone's notifications. */
+export async function setPushToken(pushToken: string) {
+  await authed<PlayerView>('PATCH', '/players/me', { pushToken });
+}
+
 /** Changes the artist name (creating this device's player if it hasn't played online yet). */
 export async function setPlayerName(name: string) {
   const trimmed = name.trim();
