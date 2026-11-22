@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { LegalLinks } from '@/components/legal-links';
-import { NameChip } from '@/components/name-chip';
 import type { InviteView } from '@/remote/api';
 import { api, ensurePlayer, usePlayer } from '@/remote/session';
 import { colors } from '@/theme';
@@ -62,7 +61,6 @@ export default function Join() {
             </Text>
           </>
         )}
-        {!full && invite && <NameChip />}
         {error && <Text style={styles.error}>{error}</Text>}
         {invite && !full && <Button label="Join and draw" onPress={join} disabled={busy} />}
         {invite && !full && (

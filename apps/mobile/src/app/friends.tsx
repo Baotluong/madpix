@@ -7,7 +7,6 @@ import { Button } from '@/components/button';
 import { DieButton } from '@/components/die-button';
 import { LegalLinks } from '@/components/legal-links';
 import { ModeIntro } from '@/components/mode-intro';
-import { NameChip } from '@/components/name-chip';
 import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
 import { useGameStore } from '@/game/store';
@@ -110,7 +109,6 @@ export default function Friends() {
     <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ModeIntro mode="send" />
-        <NameChip />
 
         <View style={styles.modes}>
           <View style={styles.card}>
