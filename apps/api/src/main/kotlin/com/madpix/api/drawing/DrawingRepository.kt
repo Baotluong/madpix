@@ -234,6 +234,21 @@ class DrawingRepository(private val jdbc: JdbcClient) {
             .param("me", playerId)
             .query { rs, _ -> rs.toDrawing() }.optional().orElse(null)
 
+    /** A public drawing where it's [playerId]'s turn and they haven't folded: "Play now" sends them back to it. */
+    fun findMyPublicTurn(playerId: String): DrawingRow? =
+        jdbc.sql(
+            """
+            SELECT d.* FROM drawings d JOIN seats s ON s.drawing_id = d.id
+            WHERE s.player_id = :me AND s.submitted_at IS NULL
+              AND d.visibility = 'public' AND d.finished_at IS NULL
+              AND s.position = (SELECT COUNT(*) FROM seats f WHERE f.drawing_id = d.id AND f.submitted_at IS NOT NULL)
+            ORDER BY d.created_at
+            LIMIT 1
+            """,
+        )
+            .param("me", playerId)
+            .query { rs, _ -> rs.toDrawing() }.optional().orElse(null)
+
     /** Unfinished public drawings and rematches: the ones whose turns can run out. */
     fun findTimedOpen(): List<DrawingRow> =
         jdbc.sql(

@@ -90,8 +90,14 @@ async function authed<T>(method: Method, path: string, body?: unknown): Promise<
   }
 }
 
+/** A skip still on its way to the server. The drawing list waits for it, so it isn't stale. */
+let skipping: Promise<unknown> = Promise.resolve();
+
 export const api = {
-  myDrawings: () => authed<DrawingView[]>('GET', '/drawings'),
+  myDrawings: async () => {
+    await skipping;
+    return authed<DrawingView[]>('GET', '/drawings');
+  },
   drawing: (id: string) => authed<DrawingView>('GET', `/drawings/${id}`),
   create: (artistCount: number, prompt: string | null, isPublic: boolean) =>
     authed<DrawingView>('POST', '/drawings', { artistCount, prompt, public: isPublic }),
@@ -99,6 +105,12 @@ export const api = {
   playNow: (prompt: string) => authed<DrawingView>('POST', '/drawings/play-now', { prompt }),
   /** "Draw again": the one rematch of a finished drawing, with the same artists. */
   rematch: (id: string, prompt: string) => authed<DrawingView>('POST', `/drawings/${id}/rematch`, { prompt }),
+  /** Gives up my spot in a public drawing I haven't drawn in (deletes it if nobody else is in). */
+  skip: (id: string) => {
+    const done = authed<null>('POST', `/drawings/${id}/skip`);
+    skipping = done.catch(() => {});
+    return done;
+  },
   block: (id: string, position: number) => authed<null>('POST', `/drawings/${id}/block`, { position }),
   join: (code: string) => authed<DrawingView>('POST', '/drawings/join', { code }),
   submitStrip: (id: string, strokes: Stroke[]) =>

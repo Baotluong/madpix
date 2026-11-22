@@ -49,6 +49,10 @@ class DrawingController(private val service: DrawingService) {
     fun rematch(@CurrentPlayer me: Player, @PathVariable id: String, @Valid @RequestBody body: PromptRequest?) =
         service.rematch(me, id, body?.prompt)
 
+    @PostMapping("/drawings/{id}/skip")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun skip(@CurrentPlayer me: Player, @PathVariable id: String) = service.skip(me, id)
+
     @PostMapping("/drawings/{id}/block")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun block(@CurrentPlayer me: Player, @PathVariable id: String, @Valid @RequestBody body: BlockRequest) =

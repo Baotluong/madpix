@@ -59,6 +59,8 @@ class DrawingService(
     @Transactional
     fun playNow(me: Player, prompt: String?): DrawingView {
         expireTurns()
+        // A public turn they haven't drawn yet (they left the app, say) comes first.
+        drawings.findMyPublicTurn(me.id)?.let { return view(it, drawings.seats(it.id), me) }
         checkOpenDrawings(me)
         val found = if (random.nextDouble() < createChance) null else drawings.findPlayable(me.id)
         if (found == null) {
@@ -133,6 +135,21 @@ class DrawingService(
         val row = newDrawing(me, d.artistCount, word, Visibility.PRIVATE, rematchOf = id, full = invited.size + 1 == d.artistCount)
         (listOf(me.id) + invited).forEachIndexed { pos, playerId -> drawings.insertSeat(row.id, pos, playerId, row.createdAt) }
         return view(row, drawings.seats(row.id), me)
+    }
+
+    /**
+     * Backing out of a public drawing before folding: the spot opens for the next "Play now"
+     * artist right away, instead of after the turn runs out. A drawing with nobody else in it is
+     * deleted.
+     */
+    @Transactional
+    fun skip(me: Player, id: String) {
+        val d = drawings.find(id) ?: notFound("No such drawing")
+        val seats = drawings.seats(id)
+        val mine = seats.find { it.playerId == me.id } ?: notFound("No such drawing")
+        if (d.visibility != Visibility.PUBLIC) conflict("Only public drawings can be skipped")
+        if (d.finishedAt != null || mine.submittedAt != null) conflict("You've already drawn your strip")
+        removeSeat(d, seats, mine)
     }
 
     /** Never share a public drawing (or a rematch) with the artist in [position] again. */

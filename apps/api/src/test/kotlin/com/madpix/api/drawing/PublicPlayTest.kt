@@ -102,6 +102,35 @@ class PublicPlayTest(
     }
 
     @Test
+    fun `play now goes back to an untouched public turn, and backing out gives it up`() {
+        val ann = newPlayer("Ann")
+        val ben = newPlayer("Ben")
+
+        // Ann leaves the app before drawing. Play now brings her back to the same drawing.
+        val first = playNow(ann)["id"].asString()
+        assertEquals(first, playNow(ann)["id"].asString())
+
+        // Backing out of a drawing nobody else is in deletes it.
+        call(ann, POST, "/drawings/$first/skip").andExpect { status { isNoContent() } }
+        call(ann, GET, "/drawings/$first").andExpect { status { isNotFound() } }
+
+        // Ben backs out of Ann's drawing: it stays, and the spot is free for the next player.
+        val anns = create(ann, artists = 2, public = true)
+        fold(ann, anns)
+        assertEquals(anns, playNow(ben)["id"].asString())
+        call(ben, POST, "/drawings/$anns/skip").andExpect { status { isNoContent() } }
+        call(ben, GET, "/drawings/$anns").andExpect { status { isNotFound() } }
+        val after = call(ann, GET, "/drawings/$anns").json()
+        assertTrue(after["waitingForArtist"].asBoolean())
+        assertEquals(anns, playNow(newPlayer("Cat"))["id"].asString())
+
+        // Folded strips and private drawings can't be skipped.
+        call(ann, POST, "/drawings/$anns/skip").andExpect { status { isConflict() } }
+        val private = create(ann, artists = 2, public = false)
+        call(ann, POST, "/drawings/$private/skip").andExpect { status { isConflict() } }
+    }
+
+    @Test
     fun `private, reported and blocked drawings are never handed out`() {
         val ann = newPlayer("Ann")
         val ben = newPlayer("Ben")

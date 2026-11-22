@@ -1,7 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -27,7 +27,8 @@ const POLL_MS = 8000;
 
 /** One remote drawing: your turn (draw), someone else's (wait and invite), or finished (reveal). */
 export default function RemoteScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // playNow: opened from Play now, so backing out before drawing anything gives the spot up.
+  const { id, playNow } = useLocalSearchParams<{ id: string; playNow?: string }>();
   const { session } = usePlayer();
   const [view, setView] = useState<DrawingView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +69,28 @@ export default function RemoteScreen() {
   useEffect(() => {
     if (finished && view) saveRemoteToGallery(toGame(view));
   }, [finished, view]);
+
+  // We can't tell someone who closed the app from someone coming right back, but leaving this
+  // screen (Skip, Android back, browser back) before drawing a line is a clear "not this one".
+  // The spot opens for the next player, or the drawing is deleted if nobody else is in it.
+  const skipOnLeave = useRef(false);
+  useEffect(() => {
+    skipOnLeave.current =
+      playNow === '1' &&
+      view?.visibility === 'PUBLIC' &&
+      view.myTurn &&
+      view.status !== 'FINISHED' &&
+      !drawing &&
+      (draft?.length ?? 0) === 0;
+  });
+  // The screen closes when it's popped (Skip, Android back, browser back), not when another
+  // screen opens on top of it.
+  useEffect(
+    () => () => {
+      if (skipOnLeave.current) api.skip(id).catch(() => {});
+    },
+    [id],
+  );
 
   const myTurn = view?.myTurn ?? false;
   useEffect(() => {
@@ -175,7 +198,12 @@ export default function RemoteScreen() {
           disabled={!draft}
           onPress={() => setDrawing(true)}
         />
-        <Button label="Not now" variant="ghost" onPress={() => router.back()} style={styles.lightGhost} />
+        <Button
+          label={playNow === '1' && isPublic ? 'Skip this one' : 'Not now'}
+          variant="ghost"
+          onPress={() => router.back()}
+          style={styles.lightGhost}
+        />
       </CoverScreen>
     );
   }
