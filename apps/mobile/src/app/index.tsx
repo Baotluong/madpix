@@ -33,7 +33,7 @@ export default function Home() {
     try {
       await ensurePlayer();
       const view = await api.playNow(randomPrompt());
-      router.push({ pathname: '/remote/[id]', params: { id: view.id } });
+      router.push({ pathname: '/remote/[id]', params: { id: view.id, playNow: '1' } });
     } catch (e) {
       notify('Couldn’t find a drawing', e instanceof Error ? e.message : String(e));
     } finally {
@@ -99,7 +99,8 @@ export default function Home() {
       <IntroCard
         mode="play"
         visible={playIntro}
-        onClose={() => {
+        onClose={() => setPlayIntro(false)}
+        onGotIt={() => {
           setPlayIntro(false);
           markIntroSeen('play');
           playNow();

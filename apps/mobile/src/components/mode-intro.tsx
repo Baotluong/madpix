@@ -83,35 +83,43 @@ export function ModeIntro({ mode }: { mode: Mode }) {
   );
 }
 
-/** The intro itself, for screens that decide when to show it (like Play now on the home screen). */
-export function IntroCard({ mode, visible, onClose }: { mode: Mode; visible: boolean; onClose: () => void }) {
-  const intro = INTROS[mode];
+/**
+ * The intro itself, for screens that decide when to show it (like Play now on the home screen).
+ * The points scroll (with a visible scroll bar) while the title and "Got it" stay put, so it fits
+ * a landscape phone. Tapping outside or Back calls [onClose]; "Got it" calls [onGotIt] if given.
+ */
+export function IntroCard(p: { mode: Mode; visible: boolean; onClose: () => void; onGotIt?: () => void }) {
+  const intro = INTROS[p.mode];
   return (
     <Modal
-      visible={visible}
+      visible={p.visible}
       transparent
       animationType="fade"
       supportedOrientations={['landscape', 'portrait']}
-      onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        {/* Taps on the card itself shouldn't close it. */}
-        <Pressable style={styles.card} onPress={() => {}}>
-          <ScrollView contentContainerStyle={styles.cardContent}>
-            <View style={styles.header}>
-              <Text style={styles.title}>{intro.title}</Text>
-              <Text style={styles.tag}>{intro.tag}</Text>
-            </View>
-            {intro.points.map((p) => (
-              <View key={p} style={styles.point}>
+      onRequestClose={p.onClose}>
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={p.onClose} accessibilityLabel="Close" />
+        <View style={styles.card}>
+          <View style={styles.header}>
+            <Text style={styles.title}>{intro.title}</Text>
+            <Text style={styles.tag}>{intro.tag}</Text>
+          </View>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.points}
+            persistentScrollbar
+            showsVerticalScrollIndicator>
+            {intro.points.map((point) => (
+              <View key={point} style={styles.point}>
                 <Text style={styles.bullet}>•</Text>
-                <Text style={styles.text}>{p}</Text>
+                <Text style={styles.text}>{point}</Text>
               </View>
             ))}
-            {mode !== 'pass' && <LegalLinks />}
-            <Button label="Got it" onPress={onClose} style={{ marginTop: 6 }} />
+            {p.mode !== 'pass' && <LegalLinks />}
           </ScrollView>
-        </Pressable>
-      </Pressable>
+          <Button label="Got it" onPress={p.onGotIt ?? p.onClose} />
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -125,9 +133,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
   },
-  card: { backgroundColor: colors.card, borderRadius: 18, width: '100%', maxWidth: 560, maxHeight: '100%' },
-  cardContent: { padding: 20, gap: 8 },
-  header: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: 2 },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 18,
+    width: '100%',
+    maxWidth: 560,
+    maxHeight: '100%',
+    padding: 16,
+    gap: 10,
+  },
+  // Shrinks to fit the card when the points are taller than the screen.
+  scroll: { flexGrow: 0, flexShrink: 1 },
+  points: { gap: 8, paddingRight: 8 },
+  header: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
   title: { fontSize: 22, fontWeight: '900', color: colors.ink },
   tag: { fontSize: 13, fontWeight: '700', color: colors.muted },
   point: { flexDirection: 'row', gap: 8 },
