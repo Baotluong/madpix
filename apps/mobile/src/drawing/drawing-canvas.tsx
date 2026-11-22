@@ -6,6 +6,7 @@ import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import { SLIVER, STRIP_W } from '@/game/geometry';
 import type { Stroke } from '@/game/types';
 import { colors } from '@/theme';
+import { PaperGrain } from './paper';
 import { StrokeShape, Strokes } from './strokes';
 
 type Props = {
@@ -27,6 +28,8 @@ type Props = {
 /** Skip points closer than this (units) to the last one, to keep strokes small. */
 const MIN_STEP = 2;
 const FOLD_DASH = [8, 6];
+/** How far past the paper's edges a point may go, in units. */
+const EDGE = 40;
 
 /** Screen height of the drawing area for a given width, including the sliver if there is one. */
 export function canvasHeight(width: number, unitsH: number, hasSliver: boolean) {
@@ -55,7 +58,14 @@ export function DrawingCanvas(p: Props) {
     liveRef.current = s;
     setLive(s);
   };
-  const toUnits = (x: number, y: number) => [x / scale, (y - sliverPx) / scale];
+  // Dragging off the paper keeps the stroke going, but points stay just past the
+  // edges: that ink is clipped anyway, and the server rejects far-off points.
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  // A tenth of a unit is far finer than a finger, and keeps strips small to store and send.
+  const toUnits = (x: number, y: number) => [
+    round1(clamp(x / scale, -EDGE, STRIP_W + EDGE)),
+    round1(clamp((y - sliverPx) / scale, -unitsH * SLIVER - EDGE, unitsH + EDGE)),
+  ];
 
   const pan = usePanGesture({
     runOnJS: true,
@@ -104,6 +114,7 @@ export function DrawingCanvas(p: Props) {
               {live && <StrokeShape stroke={live} />}
             </Group>
           </Group>
+          <PaperGrain width={width} height={height} />
 
           {prevStrokes && (
             <Line p1={{ x: 0, y: sliverPx }} p2={{ x: width, y: sliverPx }} color={colors.brand} strokeWidth={2}>
@@ -133,3 +144,5 @@ export function DrawingCanvas(p: Props) {
 const styles = StyleSheet.create({
   hint: { position: 'absolute', right: 6, fontSize: 10, color: colors.brand, opacity: 0.6 },
 });
+
+const round1 = (v: number) => Math.round(v * 10) / 10;

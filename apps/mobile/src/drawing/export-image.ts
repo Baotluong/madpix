@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { STRIP_W, stripHeight } from '@/game/geometry';
 import type { Game } from '@/game/types';
 import { colors } from '@/theme';
+import { inkColor } from './paper';
 import { strokePath } from './strokes';
 
 /** Renders the whole unfolded page to a PNG, returned as base64. */
@@ -31,12 +32,21 @@ export function renderPagePng(game: Game, widthPx = 900): string {
     // Keep each artist's ink inside their own fold.
     canvas.clipRect(Skia.XYWHRect(0, 0, STRIP_W, unitsH), 1, true);
     for (const stroke of section.strokes) {
-      paint.setColor(Skia.Color(stroke.color));
+      paint.setColor(Skia.Color(inkColor(stroke.color)));
       paint.setStrokeWidth(stroke.width);
       canvas.drawPath(strokePath(stroke.points), paint);
     }
     canvas.restore();
   });
+
+  // A faint crease where the page was folded.
+  const crease = Skia.Paint();
+  crease.setColor(Skia.Color('rgba(31,36,48,0.08)'));
+  crease.setStrokeWidth(Math.max(1, widthPx / 600));
+  for (let i = 1; i < game.sections.length; i++) {
+    const y = i * unitsH * scale;
+    canvas.drawLine(0, y, widthPx, y, crease);
+  }
 
   return surface.makeImageSnapshot().encodeToBase64();
 }

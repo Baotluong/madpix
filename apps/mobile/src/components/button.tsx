@@ -4,13 +4,15 @@ import { colors } from '@/theme';
 
 type Props = {
   label: string;
+  /** A smaller second line, e.g. what a mode means. */
+  sublabel?: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'ghost';
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-export function Button({ label, onPress, variant = 'primary', disabled, style }: Props) {
+export function Button({ label, sublabel, onPress, variant = 'primary', disabled, style }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -24,6 +26,9 @@ export function Button({ label, onPress, variant = 'primary', disabled, style }:
         style,
       ]}>
       <Text style={[styles.text, variant !== 'primary' && { color: colors.brandDark }]}>{label}</Text>
+      {sublabel && (
+        <Text style={[styles.sub, { color: variant === 'primary' ? colors.card : colors.muted }]}>{sublabel}</Text>
+      )}
     </Pressable>
   );
 }
@@ -33,6 +38,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 20,
     borderRadius: 12,
+    paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -40,4 +46,5 @@ const styles = StyleSheet.create({
   secondary: { backgroundColor: colors.card, borderWidth: 2, borderColor: colors.brandDark },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: 17, fontWeight: '700', color: colors.card },
+  sub: { fontSize: 11, fontWeight: '500', opacity: 0.75, textAlign: 'center' },
 });

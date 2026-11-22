@@ -4,10 +4,14 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { DieButton } from '@/components/die-button';
+import { ModeIntro } from '@/components/mode-intro';
+import { NameField } from '@/components/name-field';
 import { MAX_ARTISTS, MIN_ARTISTS } from '@/game/geometry';
 import { randomPrompt } from '@/game/prompts';
 import { startGame, useGameStore } from '@/game/store';
 import { confirm } from '@/lib/confirm';
+import { randomArtistNames } from '@/remote/names';
 import { colors } from '@/theme';
 
 const COUNTS = Array.from({ length: MAX_ARTISTS - MIN_ARTISTS + 1 }, (_, i) => MIN_ARTISTS + i);
@@ -15,14 +19,14 @@ const COUNTS = Array.from({ length: MAX_ARTISTS - MIN_ARTISTS + 1 }, (_, i) => M
 export default function NewDrawing() {
   const current = useGameStore((s) => s.current);
   const [count, setCount] = useState(2);
-  const [names, setNames] = useState<string[]>(Array(MAX_ARTISTS).fill(''));
+  const [names, setNames] = useState<string[]>(() => randomArtistNames(MAX_ARTISTS));
   const [inspoOn, setInspoOn] = useState(true);
   const [prompt, setPrompt] = useState(() => randomPrompt());
 
   const start = async () => {
     if (
       current &&
-      !(await confirm('Start over?', 'This throws away the drawing in progress.', 'Start new'))
+      !(await confirm('Start over?', `This throws away the drawing in progress (${current.artists[current.sections.length]}'s turn).`, 'Start new'))
     ) {
       return;
     }
@@ -35,9 +39,17 @@ export default function NewDrawing() {
   return (
     <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ModeIntro mode="pass" />
+        {current && (
+          <View style={styles.resume}>
+            <Text style={styles.resumeText}>
+              A drawing is in progress: {current.artists[current.sections.length]}&apos;s turn.
+            </Text>
+            <Button label="Continue" variant="secondary" onPress={() => router.replace('/play')} />
+          </View>
+        )}
         <View style={styles.column}>
           <Text style={styles.label}>How many artists?</Text>
-          <Text style={styles.hint}>The page gets folded into one strip per artist.</Text>
           <View style={styles.segment}>
             {COUNTS.map((n) => (
               <Pressable
@@ -49,31 +61,24 @@ export default function NewDrawing() {
             ))}
           </View>
 
-          <Text style={styles.label}>Names (optional)</Text>
+          <Text style={styles.label}>Artists</Text>
           <View style={styles.names}>
             {Array.from({ length: count }, (_, i) => (
-              <TextInput
-                key={i}
-                style={[styles.input, styles.nameInput]}
-                placeholder={`Artist ${i + 1}`}
-                placeholderTextColor={colors.muted}
-                value={names[i]}
-                maxLength={20}
-                onChangeText={(t) => setNames((prev) => prev.map((p, j) => (j === i ? t : p)))}
-              />
+              <View key={i} style={styles.nameInput}>
+                <NameField
+                  value={names[i]}
+                  placeholder={`Artist ${i + 1}`}
+                  avoid={names.slice(0, count)}
+                  onChange={(t) => setNames((prev) => prev.map((p, j) => (j === i ? t : p)))}
+                />
+              </View>
             ))}
           </View>
         </View>
 
         <View style={styles.column}>
           <View style={styles.inspoHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Inspo word</Text>
-              <Text style={styles.hint}>
-                Stuck? Everyone gets the same word, but nobody knows which part they&apos;re drawing. It&apos;s
-                just a suggestion.
-              </Text>
-            </View>
+            <Text style={[styles.label, { flex: 1 }]}>Inspo word</Text>
             <Switch
               value={inspoOn}
               onValueChange={setInspoOn}
@@ -84,7 +89,7 @@ export default function NewDrawing() {
           {inspoOn && (
             <View style={styles.inspoRow}>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                style={[styles.input, { flex: 1, textAlign: 'center' }]}
                 value={prompt}
                 onChangeText={setPrompt}
                 maxLength={30}
@@ -92,7 +97,7 @@ export default function NewDrawing() {
                 placeholderTextColor={colors.muted}
                 autoCapitalize="none"
               />
-              <Button label="Reroll" variant="secondary" onPress={() => setPrompt(randomPrompt(prompt))} />
+              <DieButton label="Random inspo word" onPress={() => setPrompt(randomPrompt(prompt))} />
             </View>
           )}
           <Button label="Start drawing" onPress={start} style={{ marginTop: 12 }} />
@@ -136,7 +141,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.ink,
   },
-  nameInput: { flexGrow: 1, flexBasis: '45%' },
+  nameInput: { flexGrow: 1, flexBasis: 220 },
+  resume: {
+    flexBasis: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  resumeText: { flex: 1, fontSize: 15, color: colors.ink, fontWeight: '600' },
   inspoHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   inspoRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
 });

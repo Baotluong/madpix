@@ -5,6 +5,7 @@ import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { STRIP_W } from '@/game/geometry';
 import type { Stroke } from '@/game/types';
 import { colors } from '@/theme';
+import { inkColor, PaperGrain } from './paper';
 
 /** Builds a smooth path through the points, using midpoints as curve anchors. */
 export function strokePath(points: number[]): SkPath {
@@ -33,7 +34,7 @@ export function StrokeShape({ stroke }: { stroke: Stroke }) {
       strokeWidth={stroke.width}
       strokeCap="round"
       strokeJoin="round"
-      color={stroke.color}
+      color={inkColor(stroke.color)}
     />
   );
 }
@@ -47,7 +48,7 @@ const MemoStroke = memo(function MemoStroke({ stroke }: { stroke: Stroke }) {
       strokeWidth={stroke.width}
       strokeCap="round"
       strokeJoin="round"
-      color={stroke.color}
+      color={inkColor(stroke.color)}
     />
   );
 });
@@ -85,6 +86,7 @@ export function SectionCanvas({ strokes, width, unitsH, fromY = 0, toY = unitsH,
       <Group transform={[{ scale }, { translateY: -fromY }]}>
         <Strokes strokes={strokes} />
       </Group>
+      <PaperGrain width={width} height={height} />
     </Canvas>
   );
 }

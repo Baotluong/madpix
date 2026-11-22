@@ -44,3 +44,6 @@ example
 
 # Copied from canvaskit-wasm by the postinstall script
 public/canvaskit.wasm
+
+# Cloudflare's deploy cache
+.wrangler

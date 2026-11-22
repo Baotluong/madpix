@@ -5,7 +5,8 @@ export const colors = {
   muted: '#6B7280',
   bg: '#F3F5FA',
   card: '#FFFFFF',
-  paper: '#FFFFFF',
+  /** Warm off-white, like real paper. A faint grain goes on top (see drawing/paper.tsx). */
+  paper: '#FBF8F1',
   /** The back of a folded-over section. */
   folded: '#DCE3F0',
   line: '#D5DAE3',

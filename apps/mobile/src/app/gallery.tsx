@@ -1,3 +1,2 @@
-import { lazySkia } from '@/lib/lazy-skia';
-
-export default lazySkia(() => import('@/screens/gallery-screen'));
+// Phones load Skia screens directly. The web loads them lazily, after Skia's WebAssembly (see gallery.web.tsx).
+export { default } from '@/screens/gallery-screen';

@@ -8,7 +8,7 @@ import { colors, PALETTE, SIZES } from '@/theme';
 export type Tool = 'pen' | 'eraser';
 
 /** Width of the toolbar's content when it sits in the side panel. */
-export const PANEL_CONTENT_W = 142;
+export const PANEL_CONTENT_W = 176;
 
 type Props = {
   tool: Tool;
@@ -28,8 +28,8 @@ type Props = {
 
 /** Deliberately small: a pen in 3 sizes, an eraser, 8 colors, undo/redo, clear. */
 export function Toolbar(p: Props) {
-  const swatch = p.vertical ? 28 : 30;
-  const btn = p.vertical ? 31 : 36;
+  const swatch = p.vertical ? 32 : 30;
+  const btn = p.vertical ? 38 : 36;
   const row = [styles.row, p.vertical && styles.grid];
   return (
     <View style={[styles.wrap, p.vertical && styles.wrapVertical]}>
@@ -58,7 +58,7 @@ export function Toolbar(p: Props) {
         {SIZES.map((s, i) => (
           <IconButton
             key={s}
-            size={36}
+            size={p.vertical ? 44 : 36}
             label={['Small', 'Medium', 'Large'][i] + ' brush'}
             selected={p.sizeIndex === i}
             onPress={() => p.onSize(i)}>

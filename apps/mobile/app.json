@@ -2,12 +2,13 @@
   "expo": {
     "name": "MadPix",
     "slug": "madpix",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "landscape",
     "icon": "./assets/images/icon.png",
     "scheme": "madpix",
     "userInterfaceStyle": "light",
     "android": {
+      "package": "com.madpixdev.madpix",
       "adaptiveIcon": {
         "backgroundColor": "#5B8DE6",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
@@ -28,11 +29,21 @@
           "imageWidth": 220
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "./plugins/with-android-build-settings"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.madpixdev.madpix"
+    },
+    "owner": "madpixdev",
+    "extra": {
+      "eas": {
+        "projectId": "bdf1bb8a-b622-496c-b9f9-6bf1c3b453b3"
+      }
     }
   }
 }

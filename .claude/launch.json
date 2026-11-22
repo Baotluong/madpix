@@ -6,6 +6,30 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "apps/mobile", "run", "web", "--", "--port", "8081"],
       "port": 8081
+    },
+    {
+      "name": "madpix-web-dist",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "--single", "--listen", "8092", "apps/mobile/dist"],
+      "port": 8092
+    },
+    {
+      "name": "madpix-api-test",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd apps/api && rm -f /tmp/madpix-preview.db* && JAVA_HOME=$HOME/.jdks/jdk-21.0.13.1+2/Contents/Home DB_PATH=/tmp/madpix-preview.db PORT=8085 PUSH_ENABLED=false ./gradlew bootRun"
+      ],
+      "port": 8085
+    },
+    {
+      "name": "madpix-web-test",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd apps/mobile && EXPO_PUBLIC_API_URL=http://localhost:8085 npx expo start --web --port 8090"
+      ],
+      "port": 8090
     }
   ]
 }
