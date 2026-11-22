@@ -28,6 +28,21 @@ echo "EXPO_PUBLIC_API_URL=local" > .env.local   # git ignores it
 npx expo start --clear                         # phone and Mac on the same Wi-Fi
 ```
 
+## Fixes without a new build (EAS Update)
+
+Builds include `expo-updates`, so JavaScript-only changes (screens, text, game logic) can reach
+installed apps without a new build or a Play review. Phones pick the update up the next time
+the app opens.
+
+```bash
+npx eas-cli@latest update --channel production --message "What changed"
+```
+
+Updates only reach builds with the same `runtimeVersion` (in `app.json`). Bump it, and make a
+new build, whenever native code changes: a new library with native code, a new permission, or
+a change to the config plugins or `app.json` plugins. Build profiles map to channels of the same
+name in `eas.json` (development, preview, production).
+
 ## Web version
 
 The web build is live at https://madpix.pages.dev, hosted free on Cloudflare Pages. To update it:
